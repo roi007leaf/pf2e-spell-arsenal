@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_RULES, validateRules, runtimeSettings } from './rules.js';
+import { MODULE_ID, DEFAULT_RULES, validateRules, runtimeSettings, runtimeSignature } from './rules.js';
 import { runSpellEffect } from './runtime.js';
 import { SpellArsenalConfig } from './ui.js';
 import { restoreWizardTextures, wizardRegionSpell, wizardPlacementPending } from './template-wizard.js';
@@ -18,7 +18,7 @@ export function synchronize() {
     const rules = validateRules(game.settings.get(MODULE_ID, 'rules'));
     const wanted = new Map(authority && enabled ? rules.filter(r => r.enabled).map(r => [r.id, r]) : []);
     for (const [id, state] of states) {
-      if (wanted.has(id) && state.ruleSignature === JSON.stringify(wanted.get(id))) continue;
+      if (wanted.has(id) && state.ruleSignature === runtimeSignature(wanted.get(id))) continue;
       await state.stop(authority);
       states.delete(id);
     }
@@ -27,7 +27,7 @@ export function synchronize() {
       if (states.has(id)) continue;
       try {
         const state = await runSpellEffect(rule.kind, runtimeSettings(rule), `${MODULE_ID}:${id}`);
-        if (state) { state.ruleSignature = JSON.stringify(rule); states.set(id, state); }
+        if (state) { state.ruleSignature = runtimeSignature(rule); states.set(id, state); }
       } catch (error) { report(error); }
     }
   }).catch(report);

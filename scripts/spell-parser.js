@@ -3,7 +3,6 @@ const visuals = { fire: 'Fire', cold: 'Frost', acid: 'Acid', electricity: 'Light
 
 export function spellAreaInfo(item) {
   const system = item?.system ?? {};
-  if (system.area) return { hasTemplate: true, summary: `${system.area.value} ft ${system.area.type}` };
   const description = String(system.description?.value ?? '');
   const shapes = new Set(['burst', 'cone', 'cube', 'cylinder', 'emanation', 'line', 'ring', 'square']);
   const templates = [];
@@ -22,8 +21,12 @@ export function spellAreaInfo(item) {
   const text = description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ');
   const count = text.match(/\b(\d+)\s+contiguous\s+5[-\s](?:foot|ft)\s+squares\b/i);
   const squares = count && Number(count[1]) >= 1 && Number(count[1]) <= 120 ? Number(count[1]) : undefined;
-  return { hasTemplate: templates.length > 0, squares,
-    summary: templates.length ? `Description templates: ${templates.map(template => `${Number(template.distance) > 0 ? template.distance : 'variable'} ft ${template.type}`).join(' / ')}`
+  const details = templates.map(template => template.type === 'line'
+    ? `${Number(template.distance) > 0 ? template.distance : 'Variable'} × ${template.width ?? 1} ft line`
+    : `${Number(template.distance) > 0 ? template.distance : 'Variable'} ft ${template.type}`);
+  if (system.area) details.unshift(`${system.area.value} ft ${system.area.type}`);
+  return { hasTemplate: Boolean(system.area) || templates.length > 0, squares, templateDetails: [...new Set(details)],
+    summary: system.area ? `${system.area.value} ft ${system.area.type}` : templates.length ? `Description templates: ${templates.map(template => `${Number(template.distance) > 0 ? template.distance : 'variable'} ft ${template.type}`).join(' / ')}`
       : squares ? `${squares} contiguous cells from description` : 'No spell template' };
 }
 
@@ -61,7 +64,7 @@ export function inferSpellRule(item, configurations, id) {
   const stages = preset ? Object.values(preset.configs ?? {}).filter(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type)).map(p => p.stage) : [];
   const stage = stages.length ? Math.min(...stages) : 1;
   const supported = preset && Object.values(preset.configs ?? {}).filter(p => p.stage === stage).every(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type));
-  const rule = { id, spell: item.name, sourceUuid: item.parentItem?.uuid ?? item.uuid ?? '', kind, hasTemplate: area.hasTemplate, effect: preset?.name ?? '', enabled: Boolean(supported), stage,
+  const rule = { id, spell: item.name, sourceUuid: item.parentItem?.uuid ?? item.uuid ?? '', kind, hasTemplate: area.hasTemplate, templateDetails: area.templateDetails, effect: preset?.name ?? '', enabled: Boolean(supported), stage,
     instant: !lasting,
     duration: lasting ? (seconds > 0 && seconds <= 2147483 ? seconds : kind === 'area' ? 0 : 5) : 0,
     squares: area.squares ?? 4, highlight: kind === 'area' && lasting };

@@ -1,56 +1,78 @@
 import { MODULE_ID, DEFAULT_RULES, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
-import { inferSpellRule, resolveSpellDrop } from './spell-parser.js';
-import { openSpellDetails } from './spell-details.js';
+import { inferSpellRule, resolveSpellDrop, spellAreaInfo } from './spell-parser.js';
+import { openSpellDetails, resolveSpellDetails } from './spell-details.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
-  static DEFAULT_OPTIONS = { id: 'spell-arsenal-config', classes: ['spell-arsenal'], window: { title: 'Spell Arsenal — Spell Mappings', resizable: true }, position: { width: 1060, height: 560 } };
+  static DEFAULT_OPTIONS = { id: 'spell-arsenal-config', classes: ['spell-arsenal'], window: { title: 'Spell Arsenal — Spell Mappings', resizable: true }, position: { width: 1060, height: 740 } };
 
   async _renderHTML() {
     if (!game.user.isGM) return '<p>GM access required.</p>';
     const rules = validateRules(game.settings.get(MODULE_ID, 'rules'));
+    await this.loadTemplateDetails(rules);
     let presets = [];
     if (globalThis.tileArsenal) {
       const data = await tileArsenal.utils.getConfigurations();
       presets = Object.values(data.configurations).map(p => p.name).sort();
     }
-    return `<p>Visual effects only. Cast spells and place their regions normally. Damage triggers run when damage is applied.</p>
-      <div class="spell-drop-zone" tabindex="0">Drag a spell, wand or scroll here from a character sheet or compendium. Its spell data fills the mapping automatically.</div>
+    return this.layout(rules, presets);
+  }
+
+  async loadTemplateDetails(rules) {
+    await Promise.all(rules.map(async rule => {
+      try {
+        const spell = await resolveSpellDetails(rule.spell, rule.sourceUuid);
+        if (!spell) return;
+        const area = spellAreaInfo(spell);
+        rule.hasTemplate = area.hasTemplate;
+        rule.templateDetails = area.templateDetails;
+        rule.sourceUuid = spell.parentItem?.uuid ?? spell.uuid ?? rule.sourceUuid;
+      } catch (error) { console.warn('Spell Arsenal: template details unavailable', error); }
+    }));
+  }
+
+  layout(rules, presets) {
+    return `<div class="arsenal-toolbar"><div><strong>Spell visuals</strong><p class="status">${game.users.activeGM?.id === game.user.id ? 'Automation runs in this GM session' : 'Automation runs in the active GM session'} · Tile Arsenal ${game.modules.get('tile-arsenal')?.active ? 'ready' : 'required'}</p></div><label class="automation-switch"><input type="checkbox" name="automation" ${game.settings.get(MODULE_ID, 'enabled') ? 'checked' : ''}> Automation</label></div>
+      <div class="spell-drop-zone" tabindex="0"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><div><strong>Drop a spell, wand or scroll</strong><span>Spell data and description templates fill the mapping automatically.</span></div></div>
       <p class="status" data-drop-status aria-live="polite"></p>
-      <p class="status">${game.users.activeGM?.id === game.user.id ? 'Active GM: automation runs here.' : 'Automation runs in active GM session.'} Tile Arsenal ${game.modules.get('tile-arsenal')?.active ? 'enabled' : 'required'}.</p>
-      <label><input type="checkbox" name="automation" ${game.settings.get(MODULE_ID, 'enabled') ? 'checked' : ''}> Enable automation</label>
+      <label class="mapping-search"><i class="fas fa-search" aria-hidden="true"></i><input type="search" name="search" placeholder="Filter spells or effects" aria-label="Filter spell mappings"></label>
       <datalist id="spell-arsenal-presets">${presets.map(p => `<option value="${escape(p)}"></option>`).join('')}</datalist>
-      <table><thead><tr><th>On</th><th>Spell name</th><th>Trigger</th><th>Tile Arsenal effect</th><th>Stage</th><th>Duration</th><th>Picker cells</th><th>Show region overlay only while editing</th><th></th></tr></thead>
-      <tbody>${rules.map(r => this.row(r)).join('')}</tbody></table>
-      <p class="status">Area: spell region; spells without an area use touching-cell picker. Damage: damaged token. Cast: caster. Instant spells have no duration; their brief visual playback is cleaned up separately. Non-instant area duration 0 stays until region deleted. Cells applies to picker only. Maximum area: 120 cells.</p>
-      <footer><button type="button" data-action="add">Add mapping</button><button type="button" data-action="save">Save mappings</button><button type="button" data-action="defaults">Load defaults</button><button type="button" data-action="cleanup">Pause & clear effects</button></footer>`;
+      <div class="mapping-list" data-mappings>${rules.map(r => this.row(r)).join('')}</div>
+      <details class="mapping-help"><summary>How visuals work</summary><p>Area follows the placed spell region, using its actual covered cells (up to 120). Damage appears on the damaged token; Cast appears on the caster. Instant playback clears after five seconds. Lasting duration 0 follows the source region. Auto buildup advances with repeated casts in the same cell.</p></details>
+      <footer><button type="button" data-action="add">+ Add mapping</button><button type="button" data-action="defaults">Load defaults</button><button type="button" data-action="cleanup">Pause & clear effects</button><button class="primary" type="button" data-action="save">Save mappings</button></footer>`;
   }
 
   row(rule) {
     const duration = displayDuration(rule);
     const picker = rule.kind === 'area' && !hasTemplate(rule);
-    return `<tr data-id="${escape(rule.id)}" data-source-uuid="${escape(rule.sourceUuid ?? '')}" data-has-template="${hasTemplate(rule)}"><td><input type="checkbox" name="enabled" ${rule.enabled ? 'checked' : ''} aria-label="Enable mapping"></td>
-      <td><div class="spell-name-control"><input name="spell" value="${escape(rule.spell)}" aria-label="Spell name"><button type="button" data-action="details" title="Open spell details" aria-label="Open spell details"><i class="fas fa-book-open" aria-hidden="true"></i></button></div></td>
-      <td><select name="kind" aria-label="Trigger">${[['area', 'Area'], ['damage', 'Damage'], ['caster', 'Cast']].map(([k, label]) => `<option value="${k}" ${rule.kind === k ? 'selected' : ''}>${label}</option>`).join('')}</select></td>
-      <td><input name="effect" list="spell-arsenal-presets" value="${escape(rule.effect)}" aria-label="Tile Arsenal effect"></td>
-      <td><select name="stageMode" aria-label="Stage mode"><option value="auto" ${rule.stageMode !== 'fixed' ? 'selected' : ''}>Auto buildup</option><option value="fixed" ${rule.stageMode === 'fixed' ? 'selected' : ''}>Fixed</option></select><input type="number" name="stage" min="1" step="1" value="${rule.stage}" ${rule.stageMode !== 'fixed' ? 'disabled hidden' : ''} aria-label="Fixed stage"></td>
-      <td><label><input type="checkbox" name="instant" ${isInstant(rule) ? 'checked' : ''}> Instant</label><input type="number" name="duration" min="0" step="any" value="${isInstant(rule) ? 0 : duration.value}" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration amount"><select name="durationUnit" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration unit">${Object.keys(DURATION_UNITS).map(unit => `<option value="${unit}" ${unit === duration.unit ? 'selected' : ''}>${unit}</option>`).join('')}</select></td>
-      <td><span data-cell-source ${picker ? 'hidden' : ''}>${rule.kind === 'area' ? 'From template' : '—'}</span><input type="number" name="squares" min="1" max="120" step="1" value="${rule.squares}" ${picker ? '' : 'hidden'} aria-label="Manual picker cells"></td>
-      <td><input type="checkbox" name="highlight" ${rule.highlight ? 'checked' : ''} ${rule.kind === 'area' ? '' : 'disabled'} title="Hides the colored region overlay outside Region controls; spell visuals remain visible." aria-label="Show region overlay only while editing"></td>
-      <td><button type="button" data-action="remove" aria-label="Remove mapping">×</button></td></tr>`;
+    const templates = rule.templateDetails ?? [];
+    return `<article class="mapping-card ${rule.enabled ? '' : 'is-disabled'}" data-mapping data-id="${escape(rule.id)}" data-source-uuid="${escape(rule.sourceUuid ?? '')}" data-has-template="${hasTemplate(rule)}" data-template-details="${escape(JSON.stringify(templates))}">
+      <div class="mapping-heading"><input type="checkbox" name="enabled" ${rule.enabled ? 'checked' : ''} aria-label="Enable mapping"><div class="spell-name-control"><input name="spell" value="${escape(rule.spell)}" placeholder="Spell name" aria-label="Spell name"><button type="button" data-action="details" title="Open spell details" aria-label="Open spell details"><i class="fas fa-book-open" aria-hidden="true"></i></button></div><button class="remove-mapping" type="button" data-action="remove" aria-label="Remove mapping" title="Remove mapping">×</button></div>
+      <div class="mapping-fields">
+      <label class="mapping-field"><span>Trigger</span><select name="kind" aria-label="Trigger">${[['area', 'Area · placed region'], ['damage', 'Damage · target'], ['caster', 'Cast · caster']].map(([k, label]) => `<option value="${k}" ${rule.kind === k ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
+      <label class="mapping-field"><span>Tile Arsenal effect</span><input name="effect" list="spell-arsenal-presets" value="${escape(rule.effect)}" placeholder="Choose effect" aria-label="Tile Arsenal effect"></label>
+      <div class="mapping-field"><span>Stage</span><div class="inline-controls"><select name="stageMode" aria-label="Stage mode"><option value="auto" ${rule.stageMode !== 'fixed' ? 'selected' : ''}>Auto buildup</option><option value="fixed" ${rule.stageMode === 'fixed' ? 'selected' : ''}>Fixed</option></select><input type="number" name="stage" min="1" step="1" value="${rule.stage}" ${rule.stageMode !== 'fixed' ? 'disabled hidden' : ''} aria-label="Fixed stage"></div></div>
+      <div class="mapping-field"><span>Duration</span><div class="inline-controls"><label class="instant-toggle"><input type="checkbox" name="instant" ${isInstant(rule) ? 'checked' : ''}> Instant</label><input type="number" name="duration" min="0" step="any" value="${isInstant(rule) ? 0 : duration.value}" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration amount"><select name="durationUnit" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration unit">${Object.keys(DURATION_UNITS).map(unit => `<option value="${unit}" ${unit === duration.unit ? 'selected' : ''}>${unit}</option>`).join('')}</select></div></div>
+      </div><div class="mapping-area"><div class="template-options"><span class="field-caption">Templates</span><div class="template-badges">${templates.length ? templates.map(label => `<span class="template-badge">${escape(label)}</span>`).join('') : `<span class="status">${hasTemplate(rule) ? 'Details unavailable — drop spell to link' : 'No spell template'}</span>`}</div></div><label class="picker-control" ${picker ? '' : 'hidden'}>Picker cells <input type="number" name="squares" min="1" max="120" step="1" value="${rule.squares}" aria-label="Manual picker cells"></label><label class="overlay-control" ${rule.kind === 'area' ? '' : 'hidden'}><input type="checkbox" name="highlight" ${rule.highlight ? 'checked' : ''} ${rule.kind === 'area' ? '' : 'disabled'}> Show overlay only while editing</label></div></article>`;
   }
 
   _replaceHTML(html, content) {
     content.innerHTML = html;
+    const filter = () => {
+      const search = content.querySelector('[name="search"]')?.value.trim().toLowerCase() ?? '';
+      for (const row of content.querySelectorAll('[data-mapping]')) row.hidden = !`${row.querySelector('[name="spell"]').value} ${row.querySelector('[name="effect"]').value}`.toLowerCase().includes(search);
+    };
+    content.oninput = filter;
     content.onchange = event => {
-      if (event.target.name === 'stageMode') { const input = event.target.closest('tr').querySelector('[name="stage"]'); input.disabled = input.hidden = event.target.value !== 'fixed'; }
-      if (event.target.name === 'instant') { const row = event.target.closest('tr'), input = row.querySelector('[name="duration"]'); input.hidden = event.target.checked; row.querySelector('[name="durationUnit"]').hidden = event.target.checked; input.value = event.target.checked ? 0 : (Number(input.value) || 1); }
+      if (event.target.name === 'enabled') event.target.closest('[data-mapping]').classList.toggle('is-disabled', !event.target.checked);
+      if (event.target.name === 'stageMode') { const input = event.target.closest('[data-mapping]').querySelector('[name="stage"]'); input.disabled = input.hidden = event.target.value !== 'fixed'; }
+      if (event.target.name === 'instant') { const row = event.target.closest('[data-mapping]'), input = row.querySelector('[name="duration"]'); input.hidden = event.target.checked; row.querySelector('[name="durationUnit"]').hidden = event.target.checked; input.value = event.target.checked ? 0 : (Number(input.value) || 1); }
       if (event.target.name === 'kind') {
-        const row = event.target.closest('tr'), area = event.target.value === 'area';
+        const row = event.target.closest('[data-mapping]'), area = event.target.value === 'area';
         const picker = area && row.dataset.hasTemplate !== 'true';
-        row.querySelector('[name="squares"]').hidden = !picker;
-        const label = row.querySelector('[data-cell-source]'); label.hidden = picker; label.textContent = area ? 'From template' : '—';
+        row.querySelector('.picker-control').hidden = !picker;
+        row.querySelector('.overlay-control').hidden = !area;
         row.querySelector('[name="highlight"]').disabled = !area;
       }
     };
@@ -63,12 +85,22 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
         const item = await resolveSpellDrop(event, CONFIG.Item.documentClass);
         const data = await tileArsenal.utils.getConfigurations();
         const { rule, summary } = inferSpellRule(item, data.configurations, foundry.utils.randomID());
-        const rows = [...content.querySelectorAll('tbody tr')];
+        const rows = [...content.querySelectorAll('[data-mapping]')];
         const duplicate = rows.find(row => row.querySelector('[name="spell"]').value.trim().toLowerCase() === rule.spell.trim().toLowerCase());
-        if (duplicate) { duplicate.querySelector('[name="spell"]').focus(); throw new Error(`${rule.spell} already has a mapping. Existing overrides preserved.`); }
+        if (duplicate) {
+          duplicate.dataset.sourceUuid = rule.sourceUuid;
+          duplicate.dataset.hasTemplate = String(rule.hasTemplate);
+          duplicate.dataset.templateDetails = JSON.stringify(rule.templateDetails);
+          duplicate.querySelector('.template-badges').innerHTML = rule.templateDetails.length ? rule.templateDetails.map(label => `<span class="template-badge">${escape(label)}</span>`).join('') : '<span class="status">No spell template</span>';
+          duplicate.querySelector('.picker-control').hidden = duplicate.querySelector('[name="kind"]').value !== 'area' || rule.hasTemplate;
+          duplicate.hidden = false;
+          duplicate.querySelector('[name="spell"]').focus();
+          content.querySelector('[data-drop-status]').textContent = `${rule.spell}: template details refreshed. Existing overrides preserved. Save mappings to keep the link.`;
+          return;
+        }
         const blank = rows.find(row => !row.querySelector('[name="spell"]').value.trim() && !row.querySelector('[name="effect"]').value.trim());
         if (blank) blank.outerHTML = this.row(rule);
-        else content.querySelector('tbody').insertAdjacentHTML('beforeend', this.row(rule));
+        else content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row(rule));
         content.querySelector('[data-drop-status]').textContent = `${rule.spell}: ${summary}. Review, then Save mappings.`;
       } catch (error) { ui.notifications.warn(error.message); }
     };
@@ -76,15 +108,25 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
       const action = event.target.closest('[data-action]')?.dataset.action;
       if (!action || !game.user.isGM) return;
       try {
-        if (action === 'details') { const row = event.target.closest('tr'); await openSpellDetails(row.querySelector('[name="spell"]').value, row.dataset.sourceUuid); }
-        if (action === 'remove') event.target.closest('tr').remove();
-        if (action === 'add') content.querySelector('tbody').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', enabled: true }));
-        if (action === 'defaults') content.querySelector('tbody').innerHTML = DEFAULT_RULES.map(r => this.row(r)).join('');
+        if (action === 'details') { const row = event.target.closest('[data-mapping]'); await openSpellDetails(row.querySelector('[name="spell"]').value, row.dataset.sourceUuid); }
+        if (action === 'remove') event.target.closest('[data-mapping]').remove();
+        if (action === 'add') {
+          content.querySelector('[name="search"]').value = '';
+          filter();
+          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', enabled: true }));
+          const input = content.querySelector('[data-mappings]').lastElementChild.querySelector('[name="spell"]');
+          input.focus(); input.scrollIntoView({ block: 'nearest' });
+        }
+        if (action === 'defaults') {
+          const defaults = validateRules(DEFAULT_RULES);
+          await this.loadTemplateDetails(defaults);
+          content.querySelector('[data-mappings]').innerHTML = defaults.map(r => this.row(r)).join(''); filter();
+        }
         if (action === 'save') {
-          const rules = validateRules([...content.querySelectorAll('tbody tr')].map(row => {
+          const rules = validateRules([...content.querySelectorAll('[data-mapping]')].map(row => {
             const value = name => row.querySelector(`[name="${name}"]`).value;
             const checked = name => row.querySelector(`[name="${name}"]`).checked;
-            return { id: row.dataset.id, spell: value('spell'), sourceUuid: row.dataset.sourceUuid, effect: value('effect'), kind: value('kind'), hasTemplate: row.dataset.hasTemplate === 'true', instant: checked('instant'), duration: Number(value('duration')) * DURATION_UNITS[value('durationUnit')], durationUnit: value('durationUnit'), stage: Number(value('stage')), stageMode: value('stageMode'), squares: Number(value('squares')), enabled: checked('enabled'), highlight: checked('highlight') };
+            return { id: row.dataset.id, spell: value('spell'), sourceUuid: row.dataset.sourceUuid, effect: value('effect'), kind: value('kind'), hasTemplate: row.dataset.hasTemplate === 'true', templateDetails: JSON.parse(row.dataset.templateDetails || '[]'), instant: checked('instant'), duration: Number(value('duration')) * DURATION_UNITS[value('durationUnit')], durationUnit: value('durationUnit'), stage: Number(value('stage')), stageMode: value('stageMode'), squares: Number(value('squares')), enabled: checked('enabled'), highlight: checked('highlight') };
           }));
           const data = await tileArsenal.utils.getConfigurations();
           for (const rule of rules.filter(r => r.enabled)) {

@@ -33,13 +33,14 @@ export function validateRules(rules) {
     if (rule.instant !== undefined && typeof rule.instant !== 'boolean') throw new Error('Invalid instant toggle.');
     if (rule.hasTemplate !== undefined && typeof rule.hasTemplate !== 'boolean') throw new Error('Invalid template toggle.');
     if (rule.durationUnit !== undefined && !Object.hasOwn(DURATION_UNITS, rule.durationUnit)) throw new Error('Invalid duration unit.');
+    const templateDetails = Array.isArray(rule.templateDetails) ? [...new Set(rule.templateDetails.filter(label => typeof label === 'string' && label.length <= 200))].slice(0, 64) : [];
     const trigger = `${rule.kind}:${spell.toLowerCase()}`;
     if (rule.enabled && triggers.has(trigger)) throw new Error(`Duplicate enabled trigger for ${spell}.`);
     if (rule.enabled) triggers.add(trigger);
     if (!Number.isFinite(rule.duration) || rule.duration < 0 || rule.duration > 2147483 || (!isInstant(rule) && rule.kind !== 'area' && rule.duration === 0)) throw new Error('Duration must be positive; area effects may use 0 for permanent.');
     if (!Number.isInteger(rule.stage) || rule.stage < 1) throw new Error('Stage must be a positive integer.');
     if (!Number.isInteger(rule.squares) || rule.squares < 1 || rule.squares > 120) throw new Error('Choose 1–120 touching cells.');
-    return { id: rule.id, enabled: rule.enabled, kind: rule.kind, spell, sourceUuid: typeof rule.sourceUuid === 'string' ? rule.sourceUuid : '', effect, hasTemplate: hasTemplate(rule), duration: isInstant(rule) ? 0 : rule.duration, durationUnit: displayDuration(rule).unit, instant: isInstant(rule), stage: rule.stage, stageMode, squares: rule.squares, highlight: rule.highlight };
+    return { id: rule.id, enabled: rule.enabled, kind: rule.kind, spell, sourceUuid: typeof rule.sourceUuid === 'string' ? rule.sourceUuid : '', effect, hasTemplate: hasTemplate(rule), templateDetails, duration: isInstant(rule) ? 0 : rule.duration, durationUnit: displayDuration(rule).unit, instant: isInstant(rule), stage: rule.stage, stageMode, squares: rule.squares, highlight: rule.highlight };
   });
 }
 
@@ -47,3 +48,5 @@ export function runtimeSettings(rule) {
   return { SPELL_NAME: rule.spell, EFFECT_NAME: rule.effect, INSTANT: isInstant(rule), DURATION_SECONDS: isInstant(rule) ? 5 : rule.duration,
     STAGE: rule.stage, STAGE_MODE: rule.stageMode ?? 'auto', FREEFORM_SQUARES: rule.squares, REGION_HIGHLIGHT_ONLY_WHILE_EDITING: rule.highlight, TILE_ELEVATION_OFFSET: 0.1 };
 }
+
+export function runtimeSignature(rule) { return JSON.stringify([rule.kind, runtimeSettings(rule)]); }

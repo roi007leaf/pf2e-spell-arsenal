@@ -24,6 +24,7 @@ test('description templates support explicit types and variable distances withou
 test('structured areas take precedence; contiguous prose supplies bounded picker size', () => {
   const area = spellAreaInfo(spell({ area: { type: 'burst', value: 20 }, description: { value: '@Template[cone|distance:5]' } }));
   assert.equal(area.summary, '20 ft burst');
+  assert.deepEqual(area.templateDetails, ['20 ft burst', '5 ft cone']);
   const { rule } = inferSpellRule(spell({ description: { value: '<p>Area 6 contiguous 5-foot squares</p>' } }), presets, 'cells');
   assert.equal(rule.kind, 'area'); assert.equal(rule.hasTemplate, false); assert.equal(rule.squares, 6);
   assert.equal(spellAreaInfo(spell({ description: { value: '999 contiguous 5-foot squares' } })).squares, undefined);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_RULES, validateRules, runtimeSettings } from '../scripts/rules.js';
+import { DEFAULT_RULES, validateRules, runtimeSettings, runtimeSignature } from '../scripts/rules.js';
 
 test('default mappings select expected triggers and durations', () => {
   const rules = validateRules(DEFAULT_RULES);
@@ -24,4 +24,11 @@ test('persistent duration only valid for areas; bounds protect timers and scene 
 test('invalid optional toggles and duration units fail validation', () => {
   for (const fields of [{ instant: 'false' }, { hasTemplate: 'true' }, { durationUnit: 'days' }])
     assert.throws(() => validateRules([{ ...DEFAULT_RULES[0], ...fields }]), /Invalid/);
+});
+
+test('template metadata and display units do not restart visuals; runtime overrides do', () => {
+  const rule = validateRules(DEFAULT_RULES)[3];
+  assert.equal(runtimeSignature(rule), runtimeSignature({ ...rule, templateDetails: ['5 ft burst'], sourceUuid: 'Item.grease', hasTemplate: true, durationUnit: 'seconds' }));
+  assert.notEqual(runtimeSignature(rule), runtimeSignature({ ...rule, duration: 120 }));
+  assert.notEqual(runtimeSignature(rule), runtimeSignature({ ...rule, kind: 'caster' }));
 });
