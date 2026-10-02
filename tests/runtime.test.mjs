@@ -70,6 +70,21 @@ test('applied damage creates owned effects once; undo removes them', async () =>
   assert.equal(env.hooks.size, 0);
 });
 
+test('description template casts wait for native placement instead of opening a second picker', async () => {
+  const env = environment();
+  const settings = { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 0 };
+  const state = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:description');
+  try {
+    const message = { ...env.message, item: { ...env.message.item, system: { description: { value: '@Template[burst|distance:5]' } } },
+      flags: { pf2e: { context: { type: 'spell-cast' }, origin: { rollOptions: ['origin:action:slug:cast-a-spell'] } } } };
+    env.emit('createChatMessage', message);
+    await state.queue;
+    assert.equal(state.pickerTask, undefined);
+    assert.equal(env.docs.length, 0);
+    assert.deepEqual(env.errors, []);
+  } finally { await state.stop(); }
+});
+
 test('healing, reverted damage and non-GM clients cannot spawn visuals', async () => {
   const player = environment(false);
   assert.equal(await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'test-player'), undefined);

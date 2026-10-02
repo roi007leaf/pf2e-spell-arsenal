@@ -1,4 +1,5 @@
 import { stageRecords, chooseStage, replaceOverlaps } from './stages.js';
+import { spellAreaInfo } from './spell-parser.js';
 import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, syncWizardTextures, WIZARD_ID } from './template-wizard.js';
 
 const documentTypes = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
@@ -128,7 +129,7 @@ class SpellVisualRunner {
     this.received.add(message.id);
     if (this.received.size > 500) this.received.delete(this.received.values().next().value);
     if (this.kind === 'area') {
-      if (spell.system?.area || wizardHandlesPlacement(spell) || this.pickerTask) return;
+      if (spellAreaInfo(spell).hasTemplate || wizardHandlesPlacement(spell) || this.pickerTask) return;
       this.pickerTask = this.pickCells(message).catch(error => this.report(error)).finally(() => { this.pickerTask = null; });
       return;
     }

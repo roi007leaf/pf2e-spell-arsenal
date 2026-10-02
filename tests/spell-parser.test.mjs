@@ -1,9 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inferSpellRule, resolveSpellDrop } from '../scripts/spell-parser.js';
+import { inferSpellRule, resolveSpellDrop, spellAreaInfo } from '../scripts/spell-parser.js';
 import { validateRules } from '../scripts/rules.js';
 const presets = Object.fromEntries(['Fire', 'Frost', 'Acid', 'Grease', 'Earthquake'].map(name => [name, { name, configs: { tile: { type: 'Tile', stage: 1 } } }]));
 const spell = system => ({ name: 'Test Spell', type: 'spell', system });
+
+test('description-only Grease templates use placed coverage, retaining duration and cell count', () => {
+  const item = spell({ slug: 'grease', duration: { value: '1 minute' }, description: { value:
+    '<p><strong>Area</strong> 4 contiguous 5-foot squares @Template[burst|distance:5] @Template[line|distance:5|width:5]</p>' } });
+  const { rule, summary } = inferSpellRule(item, presets, 'grease');
+  assert.equal(rule.kind, 'area'); assert.equal(rule.hasTemplate, true);
+  assert.equal(rule.duration, 60); assert.equal(rule.squares, 4);
+  assert.match(summary, /Description templates: 5 ft burst \/ 5 ft line/);
+});
+
+test('description templates support explicit types and variable distances without evaluation', () => {
+  const item = spell({ description: { value: '@Template[type:cone|distance:resolve(@item.level * 5)]' }, traits: { value: ['fire'] } });
+  const { rule } = inferSpellRule(item, presets, 'cone');
+  assert.equal(rule.hasTemplate, true); assert.equal(rule.kind, 'area'); assert.equal(rule.effect, 'Fire');
+  assert.equal(spellAreaInfo(spell({ description: { value: '@Template[banana|distance:5] @Template[burst|distance:-5]' } })).hasTemplate, false);
+});
+
+test('structured areas take precedence; contiguous prose supplies bounded picker size', () => {
+  const area = spellAreaInfo(spell({ area: { type: 'burst', value: 20 }, description: { value: '@Template[cone|distance:5]' } }));
+  assert.equal(area.summary, '20 ft burst');
+  const { rule } = inferSpellRule(spell({ description: { value: '<p>Area 6 contiguous 5-foot squares</p>' } }), presets, 'cells');
+  assert.equal(rule.kind, 'area'); assert.equal(rule.hasTemplate, false); assert.equal(rule.squares, 6);
+  assert.equal(spellAreaInfo(spell({ description: { value: '999 contiguous 5-foot squares' } })).squares, undefined);
+});
 test('dropped prepared Fireball supports Set damage kinds', async () => {
   const item = await resolveSpellDrop({ dataTransfer: { getData: () => JSON.stringify({ type: 'Item', uuid: 'Compendium.pf2e.spells-srd.Item.fireball' }) } }, {
     fromDropData: async () => ({ name: 'Fireball', type: 'spell', system: { slug: 'fireball', area: { type: 'burst', value: 20 }, damage: { primary: { type: 'fire', kinds: new Set(['damage']) } } } })
