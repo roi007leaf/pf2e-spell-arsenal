@@ -1,0 +1,17 @@
+.spell-arsenal { --color-text-primary: #e2e8f0; --color-text-secondary: #a6b1c4; --color-text-emphatic: #fff; --color-form-label: #e2e8f0; --color-form-hint: #a6b1c4; }
+.spell-arsenal .window-header, .spell-arsenal .window-content { background: #161c29; color: #e2e8f0; }
+.spell-arsenal .window-content { padding: 16px; overflow: auto; }
+.spell-arsenal table { width: 100%; background: transparent; margin: 12px 0; }
+.spell-arsenal td, .spell-arsenal th { padding: 5px; text-align: left; }
+.spell-arsenal thead { background: #252f43; }
+.spell-arsenal tbody tr:nth-child(even) { background: #1e2738; }
+.spell-arsenal input, .spell-arsenal select, .spell-arsenal button { background: #252f43; color: #e2e8f0; border: 1px solid #495770; border-radius: 4px; }
+.spell-arsenal input:not([type=checkbox]), .spell-arsenal select { width: 100%; min-width: 70px; }
+.spell-arsenal input[type=number] { width: 76px; }
+.spell-arsenal button:hover { background: #354665; }
+.spell-arsenal :is(input,select,button):focus-visible { outline: 2px solid #92b9ff; }
+.spell-arsenal button:disabled { opacity: .5; }
+.spell-arsenal footer { display: flex; gap: 8px; flex-wrap: wrap; }
+.spell-arsenal .status { color: #a6b1c4; }
+.spell-arsenal .spell-drop-zone { border: 2px dashed #617392; border-radius: 8px; padding: 14px; background: #1e2738; }
+.spell-arsenal .drag-over .spell-drop-zone { border-color: #92b9ff; background: #354665; }
