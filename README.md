@@ -9,7 +9,7 @@ Inspired by [Lunatic Diceâ€™s video](https://www.youtube.com/watch?v=w0UHqi
 - Start with curated spell defaults, or drag spells from sheets and compendiums into the editor.
 - Read spell templates and durations, with suggested Tile Arsenal effects.
 - Trigger visuals when a spell is cast, its area is placed, or its damage is applied.
-- Use the placed areaâ€™s actual shape and covered cells.
+- Use the placed areas actual shape and covered cells.
 - Match visual stages to spell rank or cast level, or choose repeated-cast buildup or a fixed stage.
 - Open spell details and customize each mappingâ€™s effect, duration, and trigger.
 - Suppress overlapping Automated Animations template effects for mapped spells.
