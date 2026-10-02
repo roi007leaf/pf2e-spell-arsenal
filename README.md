@@ -14,7 +14,7 @@ When structured area data is missing, description `@Template[...]` links also se
 
 Deleting a source region removes generated documents. Damage undo removes its visuals. Cleanup pauses automation and removes only this module's generated effects across scenes, restoring owned region highlight changes. The original source spell regions remain. Effects stay at their original positions.
 
-Visuals only: no saves, damage, conditions, spell-slot spending or rules automation. Square and hex grids supported; gridless unsupported. Keep an active GM online for real-time cleanup. Refresh removes interrupted temporary effects rather than replaying old casts. Persistent areas recover when their scene is viewed.
+Visuals only: no saves, damage, conditions, spell-slot spending or rules automation. Square and hex grids supported; gridless unsupported. Keep an active GM online for real-time cleanup. Refresh removes interrupted token effects; timed areas retain their original expiry, including in unviewed scenes. Persistent areas recover when their scene is viewed. Wizard-managed lasting areas follow their source region's lifetime. AutoAnimations template effects are suppressed for mapped spells; Wizard tile textures remain untouched. Previously hidden Wizard tiles restore their saved opacity on refresh.
 
 ## Duration and buildup
 

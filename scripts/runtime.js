@@ -1,6 +1,6 @@
 import { stageRecords, chooseStage, replaceOverlaps } from './stages.js';
 import { spellAreaInfo } from './spell-parser.js';
-import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, syncWizardTextures, WIZARD_ID } from './template-wizard.js';
+import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, WIZARD_ID } from './template-wizard.js';
 
 const documentTypes = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
 const ownershipFlags = { area: 'spellArsenalArea', damage: 'spellArsenalDamage', caster: 'spellArsenalCaster' };
@@ -10,13 +10,18 @@ let pendingWork = Promise.resolve();
 
 export async function runSpellEffect(kind, settings, owner) {
   if (!authorized()) return;
+  if (!game.modules.get('tile-arsenal')?.active || !globalThis.tileArsenal) throw new Error('Enable Tile Arsenal first.');
   const library = await tileArsenal.utils.getConfigurations();
   const preset = Object.values(library.configurations).find(entry => normalized(entry.name) === normalized(settings.EFFECT_NAME));
   if (!preset?.toDocumentData) throw new Error(`Tile Arsenal effect "${settings.EFFECT_NAME}" is unavailable.`);
   const stages = [...new Set(Object.values(preset.configs ?? {}).map(entry => entry.stage))].sort((a, b) => a - b);
   if (!stages.length || (settings.STAGE_MODE === 'fixed' && !stages.includes(settings.STAGE))) throw new Error('Select an available Tile Arsenal stage.');
+  const parts = Object.values(preset.configs ?? {}).filter(part => settings.STAGE_MODE !== 'fixed' || part.stage === settings.STAGE);
+  if (parts.some(part => !documentTypes.includes(part.type) || (kind !== 'area' && part.type === 'Region')))
+    throw new Error('This Tile Arsenal effect contains unsupported document types for the selected trigger.');
   const runner = new SpellVisualRunner(kind, settings, owner, preset, stages);
-  await runner.start();
+  try { await runner.start(); }
+  catch (error) { await runner.stop(); throw error; }
   return runner;
 }
 
@@ -29,6 +34,7 @@ class SpellVisualRunner {
     this.timers = new Map();
     this.received = new Set();
     this.finished = new Set();
+    this.deadlines = new Map();
     this.queue = Promise.resolve();
   }
 
@@ -39,10 +45,11 @@ class SpellVisualRunner {
 
   listen(event, handler) { this.hooks.push([event, Hooks.on(event, handler)]); }
 
-  submit(job) {
-    pendingWork = pendingWork.then(() => this.enabled && authorized() ? job() : undefined).catch(error => this.report(error));
+  submit(job, propagate = false) {
+    const task = pendingWork.then(() => this.enabled && authorized() ? job() : undefined);
+    pendingWork = task.catch(error => { if (!propagate) this.report(error); });
     this.queue = pendingWork;
-    return pendingWork;
+    return propagate ? task : pendingWork;
   }
 
   owned(scene, source) {
@@ -54,6 +61,7 @@ class SpellVisualRunner {
   }
 
   async erase(scene, source) {
+    if (!authorized()) return;
     const entries = this.owned(scene, source);
     for (const type of documentTypes) {
       const ids = entries.filter(entry => entry.type === type).map(entry => entry.document.id);
@@ -91,26 +99,41 @@ class SpellVisualRunner {
       });
       this.listen('deleteRegion', region => {
         if (region.flags?.world?.[this.flag]) return;
-        this.submit(async () => { clearTimeout(this.timers.get(region.id)); this.timers.delete(region.id); await this.erase(region.parent, region.id); });
+        this.submit(async () => {
+          clearTimeout(this.timers.get(region.id)); this.timers.delete(region.id);
+          this.deadlines.delete(region.id); this.finished.delete(region.uuid);
+          await this.erase(region.parent, region.id);
+        });
       });
       this.listen('canvasReady', () => this.submit(() => this.recover()));
     }
     await this.submit(async () => {
       for (const scene of game.scenes) {
         if (this.kind !== 'area') await this.erase(scene);
-        else for (const entry of this.owned(scene)) {
-          const region = scene.regions.get(entry.data.regionId);
-          if (!region || !this.matches(region)) await this.erase(scene, entry.data.source);
+        else {
+          const sources = new Map(this.owned(scene).map(entry => [entry.data.regionId, entry]));
+          for (const [source, entry] of sources) {
+            const region = scene.regions.get(source);
+            if (!region || !this.matches(region)) { await this.erase(scene, source); continue; }
+            if (entry.data.expiresAt && this.lifetime(region) > 0) this.armExpiry(scene, source, entry.data.expiresAt);
+          }
+          for (const region of scene.regions) {
+            if (region.flags?.world?.spellArsenalPlacement?.owner === this.owner) await region.delete();
+            else if (this.matches(region) && this.lifetime(region) > 0 && !this.owned(scene, region.id).length) {
+              this.finished.add(region.uuid);
+              await this.restoreOverlay(region);
+            }
+          }
         }
       }
       if (this.kind === 'area') await this.recover();
-    });
+    }, true);
   }
 
   async recover() {
     for (const region of canvas.scene?.regions ?? []) if (this.matches(region)) {
       const existing = this.owned(region.parent, region.id);
-      if (this.lifetime(region) > 0 && !existing.length) { this.finished.add(region.uuid); continue; }
+      if (this.lifetime(region) > 0 && !existing.length && !this.deadlines.has(region.id)) { this.finished.add(region.uuid); continue; }
       await this.renderRegion(region);
     }
   }
@@ -144,7 +167,7 @@ class SpellVisualRunner {
     const batches = new Map();
     const previous = [];
     const existing = this.owned(scene, source);
-    const deadline = existing.find(entry => entry.data.expiresAt)?.data.expiresAt ?? (duration > 0 ? Date.now() + duration * 1000 : 0);
+    const deadline = duration > 0 ? this.deadlines.get(source) ?? existing.find(entry => entry.data.expiresAt)?.data.expiresAt ?? Date.now() + duration * 1000 : 0;
     if (deadline && deadline <= Date.now()) { await this.erase(scene, source); return false; }
     for (const offset of cells) {
       const cell = `${offset.i}:${offset.j}`;
@@ -171,22 +194,30 @@ class SpellVisualRunner {
     }
     await this.erase(scene, source);
     try {
-      for (const [type, rows] of batches) if (rows.length) await scene.createEmbeddedDocuments(type, rows);
+      for (const [type, rows] of batches) {
+        if (!this.enabled || !authorized()) return false;
+        if (rows.length) await scene.createEmbeddedDocuments(type, rows);
+      }
+      if (!this.enabled || !authorized()) return false;
       if (this.settings.STAGE_MODE !== 'fixed') await replaceOverlaps(scene, previous, source);
     } catch (error) { await this.erase(scene, source); throw error; }
-    if (deadline) {
-      clearTimeout(this.timers.get(source));
-      this.timers.set(source, setTimeout(() => {
-        this.timers.delete(source);
-        this.submit(async () => {
-          const region = scene.regions.get?.(source);
-          if (region) this.finished.add(region.uuid);
-          await this.erase(scene, source);
-          if (region) await this.restoreOverlay(region);
-        });
-      }, Math.max(0, deadline - Date.now())));
-    }
+    if (deadline) this.armExpiry(scene, source, deadline);
     return true;
+  }
+
+  armExpiry(scene, source, deadline) {
+    this.deadlines.set(source, deadline);
+    clearTimeout(this.timers.get(source));
+    this.timers.set(source, setTimeout(() => {
+      this.timers.delete(source);
+      this.submit(async () => {
+        const region = scene.regions.get?.(source);
+        if (region) this.finished.add(region.uuid);
+        await this.erase(scene, source);
+        if (region) await this.restoreOverlay(region);
+        this.deadlines.delete(source);
+      });
+    }, Math.max(0, deadline - Date.now())));
   }
 
   async renderToken(message, token, position) {
@@ -201,7 +232,7 @@ class SpellVisualRunner {
       data.elevation = this.kind === 'caster' ? data.elevation + position.elevation - canvas.level.elevation.base
         : position.elevation + (type === 'Tile' ? this.settings.TILE_ELEVATION_OFFSET ?? 0.1 : 0);
     }, this.settings.DURATION_SECONDS);
-    if (!this.enabled || !authorized() || message.flags?.[game.system.id]?.appliedDamage?.isReverted) await this.erase(token.parent, message.id);
+    if (!this.enabled || message.flags?.[game.system.id]?.appliedDamage?.isReverted) await this.erase(token.parent, message.id);
   }
 
   async renderRegion(region) {
@@ -212,7 +243,6 @@ class SpellVisualRunner {
     if (!coverage) throw new Error('The spell region has no grid coverage.');
     const cells = [...coverage.covered].filter(offset => !region.flags?.world?.spellArsenalSuperseded?.[`${canvas.level.id}:${offset.i}:${offset.j}`]);
     if (cells.length > 120) throw new Error('Spell areas support up to 120 cells.');
-    await syncWizardTextures(region.parent);
     const ground = Math.max(canvas.level.elevation.base, Number.isFinite(region.elevation.bottom) ? region.elevation.bottom : canvas.level.elevation.base);
     const created = await this.createVisuals(region.parent, region.id, cells, (data, type) => {
       data.hidden = region.hidden;
@@ -228,6 +258,7 @@ class SpellVisualRunner {
   }
 
   async restoreOverlay(region) {
+    if (!authorized()) return;
     const saved = region.flags?.world?.spellArsenalHighlight;
     if (saved?.owner !== this.owner || !region.parent.regions.has(region.id)) return;
     const changes = { 'flags.world.-=spellArsenalHighlight': null };
@@ -248,7 +279,7 @@ class SpellVisualRunner {
       while (this.enabled && authorized() && cells.length < this.settings.FREEFORM_SQUARES) {
         const preview = await canvas.regions.placeRegion({ name: this.settings.SPELL_NAME, shapes: [{ type: 'grid', offsets: [{ i: 0, j: 0 }] }], flags: { world: { spellArsenalPicker: marker } } }, { create: false });
         if (!preview || !this.enabled || !authorized()) return;
-        if (canvas.scene !== scene || canvas.level.id !== level.id) throw new Error('Placement scene changed.');
+        if (canvas.scene !== scene || canvas.level?.id !== level.id) throw new Error('Placement scene changed.');
         const cell = preview.shapes[0].toObject().offsets[0];
         if (cells.some(other => other.i === cell.i && other.j === cell.j)) continue;
         const neighbors = other => canvas.grid.isSquare ? Math.abs(other.i - cell.i) + Math.abs(other.j - cell.j) === 1

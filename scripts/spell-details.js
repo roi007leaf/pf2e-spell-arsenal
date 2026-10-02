@@ -8,9 +8,14 @@ export async function openSpellDetails(name, sourceUuid) {
   if (!spell) {
     const packs = [...game.packs].filter(pack => pack.documentName === 'Item' && /spells/i.test(pack.collection));
     for (const pack of packs) {
-      const index = await pack.getIndex({ fields: ['type'] });
-      const entry = index.find(item => item.type === 'spell' && item.name.trim().toLowerCase() === name.trim().toLowerCase());
-      if (entry) { spell = await pack.getDocument(entry._id); break; }
+      try {
+        const index = await pack.getIndex({ fields: ['type'] });
+        const entry = index.find(item => item.type === 'spell' && item.name?.trim().toLowerCase() === name.trim().toLowerCase());
+        if (entry) {
+          spell = await pack.getDocument(entry._id);
+          if (spell?.sheet) break;
+        }
+      } catch (error) { console.warn(`Spell Arsenal: unable to search ${pack.collection}`, error); }
     }
   }
   if (!spell?.sheet) throw new Error(`Spell details unavailable for ${name}. Drop its spell again to link the source.`);

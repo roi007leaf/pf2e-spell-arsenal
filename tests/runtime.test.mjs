@@ -85,6 +85,68 @@ test('description template casts wait for native placement instead of opening a 
   } finally { await state.stop(); }
 });
 
+test('startup failure unregisters listeners and rejects activation', async () => {
+  const env = environment();
+  canvas.scene.getEmbeddedCollection = () => { throw new Error('Collection unavailable'); };
+  await assert.rejects(runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'broken'), /Collection unavailable/);
+  assert.equal(env.hooks.size, 0);
+});
+
+test('timed area edits retain original deadline even when coverage temporarily empties', async () => {
+  const env = environment();
+  const scene = canvas.scene;
+  scene.regions = new Map();
+  scene.regions[Symbol.iterator] = scene.regions.values.bind(scene.regions);
+  let cells = [{ i: 0, j: 0 }];
+  const region = { id: 'timed', uuid: 'Scene.test.Region.timed', parent: scene, levels: new Set(['level']),
+    elevation: { bottom: 0 }, flags: { pf2e: { origin: { type: 'spell', name: 'Caustic Blast' } } },
+    getCoverage: () => ({ covered: cells }) };
+  const state = await runSpellEffect('area', { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 60 }, 'timed');
+  try {
+    scene.regions.set(region.id, region);
+    env.emit('createRegion', region); await state.queue;
+    const deadline = env.docs[0].flags.world.spellArsenalArea.expiresAt;
+    cells = []; env.emit('updateRegion', region, { shapes: [] }); await state.queue;
+    assert.equal(env.docs.length, 0);
+    env.emit('canvasReady'); await state.queue;
+    assert.equal(state.finished.has(region.uuid), false);
+    cells = [{ i: 0, j: 0 }]; env.emit('updateRegion', region, { shapes: [] }); await state.queue;
+    assert.equal(env.docs[0].flags.world.spellArsenalArea.expiresAt, deadline);
+    assert.deepEqual(env.errors, []);
+  } finally { await state.stop(); }
+});
+
+test('authority loss during creation stops subsequent document writes', async () => {
+  const env = environment();
+  tileArsenal.utils.getConfigurations = async () => ({ configurations: { acid: {
+    name: 'Acid', configs: { tile: { type: 'Tile', stage: 1 }, light: { type: 'AmbientLight', stage: 1 } },
+    toDocumentData: () => new Map([['Tile', [{ x: 0, y: 0, elevation: 0 }]], ['AmbientLight', [{ x: 0, y: 0, elevation: 0 }]]])
+  } } });
+  const original = canvas.scene.createEmbeddedDocuments;
+  canvas.scene.createEmbeddedDocuments = async (...args) => { await original(...args); game.users.activeGM.id = 'new-gm'; };
+  const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'handoff');
+  try {
+    env.emit('createChatMessage', env.message); await state.queue;
+    assert.deepEqual(env.docs.map(doc => doc.type), ['Tile']);
+    assert.equal(state.timers.size, 0);
+  } finally { await state.stop(false); }
+});
+
+test('refresh schedules cleanup for timed areas in unviewed scenes', async () => {
+  const env = environment();
+  const scene = { ...canvas.scene, regions: new Map() };
+  scene.regions[Symbol.iterator] = scene.regions.values.bind(scene.regions);
+  const region = { id: 'away', uuid: 'Scene.away.Region.away', parent: scene,
+    flags: { pf2e: { origin: { type: 'spell', name: 'Caustic Blast' } } } };
+  scene.regions.set(region.id, region);
+  game.scenes = [scene];
+  const deadline = Date.now() + 60000;
+  env.docs.push({ id: 'away-tile', type: 'Tile', flags: { world: { spellArsenalArea: { owner: 'away', source: 'away', regionId: 'away', expiresAt: deadline } } } });
+  const state = await runSpellEffect('area', { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 60 }, 'away');
+  try { assert.equal(state.deadlines.get('away'), deadline); assert.equal(state.timers.size, 1); }
+  finally { await state.stop(); }
+});
+
 test('healing, reverted damage and non-GM clients cannot spawn visuals', async () => {
   const player = environment(false);
   assert.equal(await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'test-player'), undefined);

@@ -30,6 +30,9 @@ export function validateRules(rules) {
     const stageMode = rule.stageMode ?? 'auto';
     if (!['auto', 'fixed'].includes(stageMode)) throw new Error('Stage mode must be auto or fixed.');
     if (typeof rule.enabled !== 'boolean' || typeof rule.highlight !== 'boolean') throw new Error('Invalid mapping toggle.');
+    if (rule.instant !== undefined && typeof rule.instant !== 'boolean') throw new Error('Invalid instant toggle.');
+    if (rule.hasTemplate !== undefined && typeof rule.hasTemplate !== 'boolean') throw new Error('Invalid template toggle.');
+    if (rule.durationUnit !== undefined && !Object.hasOwn(DURATION_UNITS, rule.durationUnit)) throw new Error('Invalid duration unit.');
     const trigger = `${rule.kind}:${spell.toLowerCase()}`;
     if (rule.enabled && triggers.has(trigger)) throw new Error(`Duplicate enabled trigger for ${spell}.`);
     if (rule.enabled) triggers.add(trigger);

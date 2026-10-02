@@ -1,7 +1,7 @@
 import { MODULE_ID, DEFAULT_RULES, validateRules, runtimeSettings } from './rules.js';
 import { runSpellEffect } from './runtime.js';
 import { SpellArsenalConfig } from './ui.js';
-import { replacesWizardTexture, syncWizardTextures, wizardRegionSpell, wizardPlacementPending } from './template-wizard.js';
+import { restoreWizardTextures, wizardRegionSpell, wizardPlacementPending } from './template-wizard.js';
 import { rememberAnimationRegion, suppressMappedAnimations } from './animation-integration.js';
 
 const states = new Map();
@@ -12,7 +12,7 @@ const report = error => { console.error('Spell Arsenal', error); ui.notification
 export function synchronize() {
   queue = queue.then(async () => {
     const authority = activeGM();
-    if (authority) for (const scene of game.scenes) await syncWizardTextures(scene);
+    if (authority) for (const scene of game.scenes) await restoreWizardTextures(scene);
     if (authority) await suppressMappedAnimations();
     const enabled = game.settings.get(MODULE_ID, 'enabled');
     const rules = validateRules(game.settings.get(MODULE_ID, 'rules'));
@@ -41,7 +41,7 @@ async function clearEffects() {
   // Remove leftovers even when their mappings were deleted before refresh.
   for (const scene of game.scenes) {
     for (const type of ['Tile', 'AmbientLight', 'AmbientSound', 'Region']) {
-      const ids = scene.getEmbeddedCollection(type).filter(doc =>
+      const ids = [...scene.getEmbeddedCollection(type)].filter(doc =>
         ['spellArsenalArea', 'spellArsenalDamage', 'spellArsenalCaster'].some(flag =>
           doc.flags.world?.[flag]?.owner?.startsWith(`${MODULE_ID}:`)) ||
         doc.flags.world?.spellArsenalPlacement?.owner?.startsWith(`${MODULE_ID}:`)).map(doc => doc.id);
@@ -88,14 +88,3 @@ Hooks.on('createRegion', rememberAnimationRegion);
 Hooks.on('deleteRegion', rememberAnimationRegion);
 Hooks.on('createSequencerEffect', () => { suppressMappedAnimations().catch(report); });
 Hooks.on('sequencerEffectManagerReady', () => { suppressMappedAnimations().catch(report); });
-Hooks.on('preCreateTile', tile => {
-  if (!replacesWizardTexture(tile)) return;
-  tile.updateSource({ alpha: 0, 'flags.world.spellArsenalWizardVisual': { alpha: tile.alpha ?? 1 } });
-});
-Hooks.on('preUpdateTile', (tile, changes) => {
-  if (replacesWizardTexture(tile) && 'alpha' in changes) changes.alpha = 0;
-});
-Hooks.on('createTile', tile => {
-  if (!activeGM() || !replacesWizardTexture(tile)) return;
-  synchronize();
-});

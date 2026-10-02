@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, replacesWizardTexture, syncWizardTextures, WIZARD_ID } from '../scripts/template-wizard.js';
+import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, restoreWizardTextures, WIZARD_ID } from '../scripts/template-wizard.js';
 import { stageRecords } from '../scripts/stages.js';
 test('Foundry iterable Collection without flatMap supports stage scan', () => {
   const docs = { *[Symbol.iterator]() { yield { flags: {} }; } };
@@ -27,19 +27,22 @@ test('contiguous cells wait for Wizard finalization before visuals or region upd
   region.flags[WIZARD_ID].contiguousPlacement = { pending: true, primary: true, total: 4 };
   assert.equal(wizardPlacementPending(region), false);
 });
-test('mapped Wizard textures suppress and restore opacity without deleting attachments', async () => {
+test('legacy hidden Wizard tiles restore opacity; untouched tiles and manual opacity changes stay intact', async () => {
   let enabled = true;
   globalThis.game = { system: { id: 'pf2e' }, modules: new Map([[WIZARD_ID, { active: true }]]), settings: { get: (id, key) => key === 'enabled' ? enabled : [{ enabled: true, kind: 'area', spell: 'Grease', effect: 'Grease' }] } };
   const region = { flags: { [WIZARD_ID]: { originUuid: 'spell' } } };
   globalThis.fromUuidSync = uuid => uuid === 'region' ? region : { type: 'spell', name: 'Grease' };
   const updates = [];
   const tile = { alpha: .7, flags: { [WIZARD_ID]: { attachedToRegion: 'region' }, world: {} }, update: async data => updates.push(data) };
-  assert.equal(replacesWizardTexture(tile), true);
-  await syncWizardTextures({ tiles: [tile] });
-  assert.equal(updates[0].alpha, 0);
+  await restoreWizardTextures({ tiles: [tile] });
+  assert.equal(updates.length, 0);
   tile.flags.world.spellArsenalWizardVisual = { alpha: .7 }; enabled = false;
-  await syncWizardTextures({ tiles: [tile] });
-  assert.equal(updates[1].alpha, .7);
+  tile.alpha = 0;
+  await restoreWizardTextures({ tiles: [tile] });
+  assert.equal(updates[0].alpha, .7);
+  tile.alpha = .4;
+  await restoreWizardTextures({ tiles: [tile] });
+  assert.equal(updates[1].alpha, undefined);
 });
 test('Wizard integration only defers configured placement and resolves UUID-only regions', () => {
   const module = { active: true, api: { readAutomation: () => ({ enabled: true, contiguous: { enabled: true } }) } };

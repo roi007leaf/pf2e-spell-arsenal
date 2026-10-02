@@ -51,6 +51,13 @@ test('targeted cold uses damage; timed field parses minute duration', () => {
   const field = inferSpellRule(spell({ area: { type: 'emanation', value: 10 }, duration: { value: '1 minute' }, traits: { value: ['fire'] } }), presets, 'field').rule;
   assert.equal(field.duration, 60); assert.equal(field.highlight, true);
 });
+
+test('seconds and sustained text stay lasting instead of becoming instant', () => {
+  const timed = inferSpellRule(spell({ area: { type: 'burst', value: 5 }, duration: { value: '30 seconds' } }), presets, 'seconds').rule;
+  assert.equal(timed.instant, false); assert.equal(timed.duration, 30);
+  const sustained = inferSpellRule(spell({ area: { type: 'burst', value: 5 }, duration: { value: 'sustained' } }), presets, 'sustained').rule;
+  assert.equal(sustained.instant, false); assert.equal(sustained.duration, 0);
+});
 test('grease without area uses picker; ambiguous visuals remain disabled and saveable', () => {
   const grease = inferSpellRule(spell({ slug: 'grease', duration: { value: '1 minute' } }), presets, 'grease').rule;
   assert.equal(grease.kind, 'area'); assert.equal(grease.squares, 4); assert.equal(grease.effect, 'Grease');

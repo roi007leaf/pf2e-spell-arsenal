@@ -12,3 +12,14 @@ test('source spell sheet opens; removed source falls back to compendium', async 
   await openSpellDetails('Grease', 'deleted'); assert.equal(opened, 2);
   await assert.rejects(openSpellDetails('Unknown', ''), /unavailable/);
 });
+
+test('missing compendium document does not prevent fallback to another spell pack', async () => {
+  let opened = false;
+  const spell = { type: 'spell', name: 'Grease', sheet: { render: async () => { opened = true; } } };
+  globalThis.game = { packs: [
+    { documentName: 'Item', collection: 'missing.spells', getIndex: async () => [{ type: 'spell', name: 'Grease', _id: 'missing' }], getDocument: async () => null },
+    { documentName: 'Item', collection: 'working.spells', getIndex: async () => [{ type: 'spell', name: 'Grease', _id: 'grease' }], getDocument: async () => spell }
+  ] };
+  await openSpellDetails('Grease', '');
+  assert.equal(opened, true);
+});

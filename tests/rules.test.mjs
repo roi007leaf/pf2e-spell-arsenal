@@ -20,3 +20,8 @@ test('persistent duration only valid for areas; bounds protect timers and scene 
   assert.throws(() => validateRules([{ ...DEFAULT_RULES[1], squares: 121 }]), /120/);
   assert.throws(() => validateRules([{ ...DEFAULT_RULES[1], duration: 2147484 }]), /Duration/);
 });
+
+test('invalid optional toggles and duration units fail validation', () => {
+  for (const fields of [{ instant: 'false' }, { hasTemplate: 'true' }, { durationUnit: 'days' }])
+    assert.throws(() => validateRules([{ ...DEFAULT_RULES[0], ...fields }]), /Invalid/);
+});

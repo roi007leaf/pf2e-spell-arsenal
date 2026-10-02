@@ -55,9 +55,9 @@ export function inferSpellRule(item, configurations, id) {
   const preset = effects.length === 1 ? effects[0] : null;
   const kind = slug === 'grease' || area.hasTemplate || area.squares ? 'area' : damage.length ? 'damage' : 'caster';
   const durationText = String(system.duration?.value ?? '').trim();
-  const match = durationText.match(/^(?:up to\s+)?(\d+)\s*(rounds?|minutes?|hours?|days?)$/i);
-  const seconds = match ? Number(match[1]) * ({ round: 6, minute: 60, hour: 3600, day: 86400 }[match[2].toLowerCase().replace(/s$/, '')]) : 0;
-  const lasting = seconds > 0 || system.duration?.sustained || /unlimited|until|permanent/i.test(durationText);
+  const match = durationText.match(/^(?:up to\s+)?(\d+(?:\.\d+)?)\s*(seconds?|rounds?|minutes?|hours?|days?)$/i);
+  const seconds = match ? Number(match[1]) * ({ second: 1, round: 6, minute: 60, hour: 3600, day: 86400 }[match[2].toLowerCase().replace(/s$/, '')]) : 0;
+  const lasting = seconds > 0 || system.duration?.sustained || /sustained|unlimited|until|permanent/i.test(durationText);
   const stages = preset ? Object.values(preset.configs ?? {}).filter(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type)).map(p => p.stage) : [];
   const stage = stages.length ? Math.min(...stages) : 1;
   const supported = preset && Object.values(preset.configs ?? {}).filter(p => p.stage === stage).every(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type));
