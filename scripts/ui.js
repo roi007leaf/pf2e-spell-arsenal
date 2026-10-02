@@ -1,5 +1,6 @@
 import { MODULE_ID, DEFAULT_RULES, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
 import { inferSpellRule, resolveSpellDrop } from './spell-parser.js';
+import { openSpellDetails } from './spell-details.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -29,11 +30,11 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
   row(rule) {
     const duration = displayDuration(rule);
     const picker = rule.kind === 'area' && !hasTemplate(rule);
-    return `<tr data-id="${escape(rule.id)}" data-has-template="${hasTemplate(rule)}"><td><input type="checkbox" name="enabled" ${rule.enabled ? 'checked' : ''} aria-label="Enable mapping"></td>
-      <td><input name="spell" value="${escape(rule.spell)}" aria-label="Spell name"></td>
+    return `<tr data-id="${escape(rule.id)}" data-source-uuid="${escape(rule.sourceUuid ?? '')}" data-has-template="${hasTemplate(rule)}"><td><input type="checkbox" name="enabled" ${rule.enabled ? 'checked' : ''} aria-label="Enable mapping"></td>
+      <td><div class="spell-name-control"><input name="spell" value="${escape(rule.spell)}" aria-label="Spell name"><button type="button" data-action="details" title="Open spell details" aria-label="Open spell details"><i class="fas fa-book-open" aria-hidden="true"></i></button></div></td>
       <td><select name="kind" aria-label="Trigger">${[['area', 'Area'], ['damage', 'Damage'], ['caster', 'Cast']].map(([k, label]) => `<option value="${k}" ${rule.kind === k ? 'selected' : ''}>${label}</option>`).join('')}</select></td>
       <td><input name="effect" list="spell-arsenal-presets" value="${escape(rule.effect)}" aria-label="Tile Arsenal effect"></td>
-      <td><select name="stageMode" aria-label="Stage mode"><option value="auto" ${rule.stageMode !== 'fixed' ? 'selected' : ''}>Auto buildup</option><option value="fixed" ${rule.stageMode === 'fixed' ? 'selected' : ''}>Fixed</option></select><input type="number" name="stage" min="1" step="1" value="${rule.stage}" ${rule.stageMode !== 'fixed' ? 'disabled' : ''} aria-label="Fixed stage"></td>
+      <td><select name="stageMode" aria-label="Stage mode"><option value="auto" ${rule.stageMode !== 'fixed' ? 'selected' : ''}>Auto buildup</option><option value="fixed" ${rule.stageMode === 'fixed' ? 'selected' : ''}>Fixed</option></select><input type="number" name="stage" min="1" step="1" value="${rule.stage}" ${rule.stageMode !== 'fixed' ? 'disabled hidden' : ''} aria-label="Fixed stage"></td>
       <td><label><input type="checkbox" name="instant" ${isInstant(rule) ? 'checked' : ''}> Instant</label><input type="number" name="duration" min="0" step="any" value="${isInstant(rule) ? 0 : duration.value}" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration amount"><select name="durationUnit" ${isInstant(rule) ? 'hidden' : ''} aria-label="Duration unit">${Object.keys(DURATION_UNITS).map(unit => `<option value="${unit}" ${unit === duration.unit ? 'selected' : ''}>${unit}</option>`).join('')}</select></td>
       <td><span data-cell-source ${picker ? 'hidden' : ''}>${rule.kind === 'area' ? 'From template' : '—'}</span><input type="number" name="squares" min="1" max="120" step="1" value="${rule.squares}" ${picker ? '' : 'hidden'} aria-label="Manual picker cells"></td>
       <td><input type="checkbox" name="highlight" ${rule.highlight ? 'checked' : ''} ${rule.kind === 'area' ? '' : 'disabled'} title="Hides the colored region overlay outside Region controls; spell visuals remain visible." aria-label="Show region overlay only while editing"></td>
@@ -43,7 +44,7 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
   _replaceHTML(html, content) {
     content.innerHTML = html;
     content.onchange = event => {
-      if (event.target.name === 'stageMode') event.target.closest('tr').querySelector('[name="stage"]').disabled = event.target.value !== 'fixed';
+      if (event.target.name === 'stageMode') { const input = event.target.closest('tr').querySelector('[name="stage"]'); input.disabled = input.hidden = event.target.value !== 'fixed'; }
       if (event.target.name === 'instant') { const row = event.target.closest('tr'), input = row.querySelector('[name="duration"]'); input.hidden = event.target.checked; row.querySelector('[name="durationUnit"]').hidden = event.target.checked; input.value = event.target.checked ? 0 : (Number(input.value) || 1); }
       if (event.target.name === 'kind') {
         const row = event.target.closest('tr'), area = event.target.value === 'area';
@@ -75,6 +76,7 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
       const action = event.target.closest('[data-action]')?.dataset.action;
       if (!action || !game.user.isGM) return;
       try {
+        if (action === 'details') { const row = event.target.closest('tr'); await openSpellDetails(row.querySelector('[name="spell"]').value, row.dataset.sourceUuid); }
         if (action === 'remove') event.target.closest('tr').remove();
         if (action === 'add') content.querySelector('tbody').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', enabled: true }));
         if (action === 'defaults') content.querySelector('tbody').innerHTML = DEFAULT_RULES.map(r => this.row(r)).join('');
@@ -82,7 +84,7 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
           const rules = validateRules([...content.querySelectorAll('tbody tr')].map(row => {
             const value = name => row.querySelector(`[name="${name}"]`).value;
             const checked = name => row.querySelector(`[name="${name}"]`).checked;
-            return { id: row.dataset.id, spell: value('spell'), effect: value('effect'), kind: value('kind'), hasTemplate: row.dataset.hasTemplate === 'true', instant: checked('instant'), duration: Number(value('duration')) * DURATION_UNITS[value('durationUnit')], durationUnit: value('durationUnit'), stage: Number(value('stage')), stageMode: value('stageMode'), squares: Number(value('squares')), enabled: checked('enabled'), highlight: checked('highlight') };
+            return { id: row.dataset.id, spell: value('spell'), sourceUuid: row.dataset.sourceUuid, effect: value('effect'), kind: value('kind'), hasTemplate: row.dataset.hasTemplate === 'true', instant: checked('instant'), duration: Number(value('duration')) * DURATION_UNITS[value('durationUnit')], durationUnit: value('durationUnit'), stage: Number(value('stage')), stageMode: value('stageMode'), squares: Number(value('squares')), enabled: checked('enabled'), highlight: checked('highlight') };
           }));
           const data = await tileArsenal.utils.getConfigurations();
           for (const rule of rules.filter(r => r.enabled)) {

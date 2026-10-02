@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_RULES, validateRules, runtimeSettings } from '../scripts/rules.js';
 
-test('default mappings preserve source macro triggers and durations', () => {
+test('default mappings select expected triggers and durations', () => {
   const rules = validateRules(DEFAULT_RULES);
   assert.equal(rules.length, 5);
   assert.equal(runtimeSettings(rules.find(r => r.id === 'grease')).FREEFORM_SQUARES, 4);

@@ -21,8 +21,8 @@ Spells without a duration are marked Instant, with no seconds field. Brief visua
 
 Stages default to Auto buildup, including existing mappings: first active effect in a cell uses the preset's first available stage; another cast of the same effect in that scene/level/cell advances to the next available stage, capped at maximum. Overlapping cells replace prior visuals; other cells stay unchanged. Expired/deleted visuals no longer count. Region edits and recovery preserve their current stage rather than counting as casts. Superseded cells do not replay from old source regions. Choose Fixed to set a stage manually. Native Tile Arsenal placements are independent of this module's buildup.
 
-Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8), based on [Lunatic Dice's macros](https://drive.google.com/file/d/1Yej-HfetKq73nRuzzmI9F-ol7JM2lg2U/view). Runtime adapted from that archive. Tile Arsenal artwork and sounds are loaded from the installed dependency and are not bundled.
+Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8). The current runtime is a new module implementation using Foundry hooks and Tile Arsenal's preset API. Tile Arsenal artwork and sounds are loaded from the installed dependency and are not bundled.
 
-`tools/import-reference.cjs` records the initial runtime adaptation from the downloaded archive in the user's temporary directory; normal use needs no build step or source archive.
+Earlier Git history contains the initial macro adaptation. That runtime has been replaced and its importer removed; normal use needs no build step or source archive.
 
-Validation: `npm test`. Grease placement and AutoAnimations suppression verified in Foundry. Broader spell coverage remains to be tested.
+Validation: `npm test`. The rewritten runtime has automated coverage for damage, undo, buildup, template cells, region edits, deletion and Wizard recovery. The rewritten runtime still needs a Foundry smoke test.

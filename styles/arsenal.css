@@ -15,3 +15,20 @@
 .spell-arsenal .status { color: #a6b1c4; }
 .spell-arsenal .spell-drop-zone { border: 2px dashed #617392; border-radius: 8px; padding: 14px; background: #1e2738; }
 .spell-arsenal .drag-over .spell-drop-zone { border-color: #92b9ff; background: #354665; }
+.spell-arsenal [hidden] { display: none !important; }
+.spell-arsenal table { border-collapse: separate; border-spacing: 0 4px; font-size: 13px; }
+.spell-arsenal th { font-size: 12px; color: #b8c6dd; font-weight: 600; }
+.spell-arsenal td { padding: 8px 6px; vertical-align: middle; }
+.spell-arsenal td:nth-child(2) { min-width: 180px; }
+.spell-arsenal td:nth-child(3) { min-width: 86px; }
+.spell-arsenal td:nth-child(4) { min-width: 140px; }
+.spell-arsenal td:nth-child(5) { min-width: 136px; }
+.spell-arsenal td:nth-child(6) { min-width: 155px; }
+.spell-arsenal .spell-name-control { display: flex; align-items: center; gap: 5px; }
+.spell-arsenal .spell-name-control input { min-width: 0; flex: 1; }
+.spell-arsenal .spell-name-control button { flex: 0 0 30px; padding: 0; height: 30px; }
+.spell-arsenal input:not([type=checkbox]), .spell-arsenal select { height: 32px; font-size: 13px; }
+.spell-arsenal td:nth-child(6) label { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.spell-arsenal td:nth-child(6) input[type=number] { width: 52px; display: inline-block; }
+.spell-arsenal td:nth-child(6) select { width: 90px; min-width: 0; display: inline-block; }
+.spell-arsenal .status { font-size: 12px; line-height: 1.5; }

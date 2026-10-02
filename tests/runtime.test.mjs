@@ -22,6 +22,36 @@ function environment(gm = true) {
   return { hooks, docs, errors, message, emit };
 }
 
+test('area lifecycle uses template cells, preserves edits and recovers Wizard areas', async () => {
+  const env = environment();
+  const scene = canvas.scene;
+  scene.regions = new Map();
+  scene.regions[Symbol.iterator] = scene.regions.values.bind(scene.regions);
+  globalThis.CONST = { REGION_VISIBILITY: { LAYER: 1, ALWAYS: 2 } };
+  game.settings = { get: () => [] };
+  game.modules.set('pf2e-aztecs-template-wizard', { active: true });
+  const region = { id: 'area', uuid: 'Scene.test.Region.area', parent: scene, levels: new Set(['level']),
+    elevation: { bottom: 0 }, visibility: 2, flags: { pf2e: { origin: { name: 'Caustic Blast', type: 'spell' } },
+      'pf2e-aztecs-template-wizard': { managed: { itemUuid: 'Item.test' } } },
+    getCoverage: () => ({ covered: [{ i: 0, j: 0 }, { i: 0, j: 1 }] }) };
+  scene.regions.set(region.id, region);
+  const settings = { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 60 };
+  const state = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:area');
+  try {
+    assert.equal(env.docs.length, 2);
+    assert.equal(state.timers.size, 0);
+    env.emit('updateRegion', region, { shapes: [] });
+    await state.queue;
+    assert.equal(env.docs.length, 2);
+    assert.ok(env.docs.every(doc => doc.flags.world.spellArsenalArea.stage === 1));
+    scene.regions.delete(region.id);
+    env.emit('deleteRegion', region);
+    await state.queue;
+    assert.equal(env.docs.length, 0);
+    assert.deepEqual(env.errors, []);
+  } finally { await state.stop(); }
+});
+
 test('applied damage creates owned effects once; undo removes them', async () => {
   const env = environment();
   const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'test-damage');
