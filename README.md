@@ -2,7 +2,7 @@
 
 Bring your spells to life with automatic **Tile Arsenal** visuals in Foundry VTT. Supports **Pathfinder 2e, Starfinder 2e, and D&D 5e**.
 
-Inspired by [Lunatic Diceâ€™s video](https://www.youtube.com/watch?v=w0UHqiM_6U8).
+Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8).
 
 ## What it does
 
