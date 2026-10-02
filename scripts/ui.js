@@ -1,7 +1,7 @@
-import { MODULE_ID, DEFAULT_RULES, missingDefaults, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
+import { MODULE_ID, missingDefaults, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
 import { inferSpellRule, resolveSpellDrop, spellAreaInfo } from './spell-parser.js';
 import { openSpellDetails, resolveSpellDetails } from './spell-details.js';
-import { dndDefaultRules } from './dnd5e.js';
+import { systemAdapter } from './systems.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -115,13 +115,13 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
         if (action === 'add') {
           content.querySelector('[name="search"]').value = '';
           filter();
-          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', sourceUuid: '', hasTemplate: false, templateDetails: [], enabled: true }));
+          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row({ ...systemAdapter().defaults()[0], id: foundry.utils.randomID(), spell: '', effect: '', sourceUuid: '', hasTemplate: false, templateDetails: [], enabled: true }));
           const input = content.querySelector('[data-mappings]').lastElementChild.querySelector('[name="spell"]');
           input.focus(); input.scrollIntoView({ block: 'nearest' });
         }
         if (action === 'defaults') {
           const existing = [...content.querySelectorAll('[data-mapping]')].map(row => ({ id: row.dataset.id, spell: row.querySelector('[name="spell"]').value }));
-          const defaults = missingDefaults(existing, validateRules(game.system.id === 'dnd5e' ? dndDefaultRules() : DEFAULT_RULES));
+          const defaults = missingDefaults(existing, validateRules(systemAdapter().defaults()));
           await this.loadTemplateDetails(defaults);
           content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', defaults.map(r => this.row(r)).join('')); filter();
           content.querySelector('[data-drop-status]').textContent = `${defaults.length} missing defaults added. Existing mappings preserved. Save mappings to keep them.`;

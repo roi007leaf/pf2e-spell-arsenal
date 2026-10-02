@@ -1,4 +1,5 @@
 import { containedSpell } from './spell-parser.js';
+import { systemAdapter } from './systems.js';
 export async function resolveSpellDetails(name, sourceUuid) {
   if (!name?.trim()) return null;
   let spell;
@@ -10,7 +11,7 @@ export async function resolveSpellDetails(name, sourceUuid) {
     const actors = [...new Set([...(globalThis.canvas?.tokens?.controlled ?? []).map(token => token.actor).filter(Boolean), ...(game.actors ?? [])])];
     const items = [...(game.items ?? []), ...actors.flatMap(actor => [...(actor.items ?? [])])];
     const matches = items.map(containedSpell).filter(item => item?.name?.trim().toLowerCase() === name.trim().toLowerCase());
-    const configured = matches.find(item => item.flags?.['pf2e-aztecs-template-wizard']?.automation?.enabled);
+    const configured = systemAdapter().preferredSpell(matches);
     spell = configured ?? spell ?? matches[0];
   }
   if (!spell) {

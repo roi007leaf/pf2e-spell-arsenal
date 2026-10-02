@@ -1,63 +1,16 @@
 // Description markup is read as data; it is never executed.
-import { wizardTemplateDetails } from './wizard-template-details.js';
 import { matchSpellVisual } from './spell-matching.js';
-import { isDndSpell, dndSpellData, dndTemplateDetails, activities } from './dnd5e.js';
+import { systemAdapter } from './systems.js';
 const visuals = { fire: 'Fire', cold: 'Frost', acid: 'Acid', electricity: 'Lightning Field', sonic: 'Earthquake', force: 'Force Barrier', vitality: 'Holy Light', void: 'Unholy Light' };
 
-export function spellAreaInfo(item) {
-  if (isDndSpell(item)) {
-    const templateDetails = dndTemplateDetails(item);
-    return { hasTemplate: templateDetails.length > 0, templateDetails, summary: templateDetails.join(' / ') || 'No spell template' };
-  }
-  const system = item?.system ?? {};
-  const description = String(system.description?.value ?? '');
-  const shapes = new Set(['burst', 'cone', 'cube', 'cylinder', 'emanation', 'line', 'ring', 'square']);
-  const templates = [];
-  for (const match of description.matchAll(/@Template\[([^\]]+)\]/gi)) {
-    const parameters = {};
-    match[1].split('|').forEach((part, index) => {
-      const separator = part.indexOf(':');
-      if (separator < 0 && index === 0) parameters.type = part.trim();
-      else if (separator >= 0) parameters[part.slice(0, separator).trim()] = part.slice(separator + 1).trim();
-    });
-    if (!shapes.has(parameters.type) || !parameters.distance) continue;
-    if (!(Number(parameters.distance) > 0) && !parameters.distance.startsWith('resolve(')) continue;
-    if (parameters.width && !(Number(parameters.width) > 0)) continue;
-    templates.push(parameters);
-  }
-  const text = description.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ');
-  const count = text.match(/\b(\d+)\s+contiguous\s+5[-\s](?:foot|ft)\s+squares\b/i);
-  const squares = count && Number(count[1]) >= 1 && Number(count[1]) <= 120 ? Number(count[1]) : undefined;
-  const details = templates.map(template => template.type === 'line'
-    ? `${Number(template.distance) > 0 ? template.distance : 'Variable'} × ${template.width ?? 1} ft line`
-    : `${Number(template.distance) > 0 ? template.distance : 'Variable'} ft ${template.type}`);
-  if (system.area) details.unshift(`${system.area.value} ft ${system.area.type}`);
-  const wizard = wizardTemplateDetails(item);
-  details.push(...wizard);
-  return { hasTemplate: Boolean(system.area) || templates.length > 0 || wizard.length > 0, squares, templateDetails: [...new Set(details)],
-    summary: wizard.length ? wizard.join(' / ') : system.area ? `${system.area.value} ft ${system.area.type}` : templates.length ? `Description templates: ${templates.map(template => `${Number(template.distance) > 0 ? template.distance : 'variable'} ft ${template.type}`).join(' / ')}`
-      : squares ? `${squares} contiguous cells from description` : 'No spell template' };
-}
-
-export function containedSpell(item) {
-  if (item?.type === 'spell') return item;
-  if (item?.system?.activities) {
-    const casts = activities(item).filter(a => a.type === 'cast');
-    if (casts.length === 1 && casts[0].cachedSpell?.type === 'spell') return casts[0].cachedSpell;
-  }
-  if (item?.type !== 'consumable') return null;
-  const stored = item.system?.spell;
-  const supplied = Object.getOwnPropertyDescriptor(item, 'embeddedSpell')?.value;
-  if (!stored && !supplied) return null;
-  const spell = item.actor ? item.embeddedSpell ?? stored ?? supplied : stored ?? supplied;
-  return spell?.type === 'spell' ? spell : null;
-}
+export function spellAreaInfo(item) { return systemAdapter(item).areaInfo(item); }
+export function containedSpell(item) { return systemAdapter(item).containedSpell(item); }
 
 export function inferSpellRule(item, configurations, id) {
   item = containedSpell(item);
   if (!item) throw new Error('Drop a spell or a wand/scroll containing a spell.');
   const original = item;
-  if (isDndSpell(item)) item = dndSpellData(item);
+  item = systemAdapter(item).normalizeSpell(item);
   const system = item.system ?? {};
   const area = spellAreaInfo(original);
   const traits = new Set(system.traits?.value ?? []);
@@ -98,11 +51,7 @@ export async function resolveSpellDrop(event, ItemClass) {
   try { data = JSON.parse(raw || '{}'); } catch { throw new Error('Drop a spell from a sheet or compendium.'); }
   if (data.type !== 'Item') throw new Error('Drop a spell Item.');
   const item = await ItemClass.fromDropData(data);
-  let spell = containedSpell(item);
-  if (!spell && item?.system?.activities) {
-    const casts = activities(item).filter(a => a.type === 'cast' && a.spell?.uuid);
-    if (casts.length === 1) spell = await fromUuid(casts[0].spell.uuid);
-  }
+  const spell = await systemAdapter(item).resolveContainedSpell(item);
   if (!spell) throw new Error('Only spell Items or spell-containing wands/scrolls can be imported.');
   return spell;
 }

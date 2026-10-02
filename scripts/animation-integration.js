@@ -1,9 +1,8 @@
 import { MODULE_ID } from './rules.js';
-import { wizardRegionSpell } from './template-wizard.js';
-import { dndRegionSpell } from './dnd5e.js';
+import { systemAdapter } from './systems.js';
 const sources = new Map();
 export function rememberAnimationRegion(region) {
-  const name = dndRegionSpell(region)?.name ?? wizardRegionSpell(region)?.name ?? region.flags?.[game.system.id]?.origin?.name ?? region.message?.item?.name;
+  const name = systemAdapter().regionName(region);
   if (name) sources.set(region.uuid, name);
   if (sources.size > 1000) sources.delete(sources.keys().next().value);
 }
@@ -13,7 +12,7 @@ export function replacesAnimation(effect) {
   if (typeof data?.file !== 'string' || !data.file.startsWith('autoanimations.templatefx.')) return false;
   if (typeof data.source !== 'string' || !/^Scene\.[^.]+\.Region\.[^.]+$/.test(data.source)) return false;
   const region = fromUuidSync(data.source);
-  const name = region ? dndRegionSpell(region)?.name ?? wizardRegionSpell(region)?.name ?? region.flags?.[game.system.id]?.origin?.name ?? region.message?.item?.name : sources.get(data.source) ?? data.name;
+  const name = region ? systemAdapter().regionName(region) : sources.get(data.source) ?? data.name;
   return Boolean(name && game.settings.get(MODULE_ID, 'rules').some(rule => rule.enabled && rule.kind === 'area' && rule.effect && rule.spell.trim().toLowerCase() === name.trim().toLowerCase()));
 }
 export function preventMappedAnimation(data) {

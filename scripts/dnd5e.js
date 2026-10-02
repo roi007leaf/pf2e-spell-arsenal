@@ -58,3 +58,57 @@ export function dndDefaultRules() {
 }
 import { DND_DEFAULT_RULES, DND_LEGACY_RULES } from './dnd-default-rules.js';
 export { DND_DEFAULT_RULES, DND_LEGACY_RULES };
+
+export const dnd5eAdapter = {
+  defaults: dndDefaultRules,
+  restoreTextures: async () => {},
+  normalizeSpell: dndSpellData,
+  areaInfo(item) {
+    const templateDetails = dndTemplateDetails(item);
+    return { hasTemplate: templateDetails.length > 0, templateDetails, summary: templateDetails.join(' / ') || 'No spell template' };
+  },
+  containedSpell(item) {
+    if (item?.type === 'spell') return item;
+    const casts = activities(item).filter(a => a.type === 'cast');
+    return casts.length === 1 && casts[0].cachedSpell?.type === 'spell' ? casts[0].cachedSpell : null;
+  },
+  async resolveContainedSpell(item) {
+    const spell = this.containedSpell(item);
+    if (spell) return spell;
+    const casts = activities(item).filter(a => a.type === 'cast' && a.spell?.uuid);
+    return casts.length === 1 ? fromUuid(casts[0].spell.uuid) : null;
+  },
+  registerHooks() {
+    Hooks.on('dnd5e.preCreateUsageMessage', annotateDndCast);
+    Hooks.on('dnd5e.preApplyDamage', annotateDndDamage);
+    Hooks.on('preUpdateActor', forwardDndDamage);
+  },
+  regionSpell: dndRegionSpell,
+  regionName(region) { return this.regionSpell(region)?.name ?? region.flags?.dnd5e?.origin?.name ?? region.message?.item?.name; },
+  regionOrigin: region => ({ castRank: region.flags?.dnd5e?.spellLevel }),
+  messageOrigin: message => message.flags?.dnd5e?.origin,
+  reverted: () => false,
+  messageEvent(message, kind) {
+    const cast = message.flags?.world?.spellArsenalCast;
+    if (!cast || kind === 'damage') return null;
+    return { id: message.id, item: dndMessageSpell(message), token: message.getAssociatedToken?.(), actor: message.getAssociatedActor?.(),
+      flags: { dnd5e: { origin: { castRank: cast.spellLevel } } } };
+  },
+  listenDamage(listen, emit) {
+    listen('updateActor', (actor, changes, options) => {
+      const event = options.spellArsenalDamageEvent;
+      if (!event || event.actorId !== actor.id) return;
+      const tokens = actor.isToken ? [actor.token] : (canvas.tokens?.placeables ?? []).filter(t => t.actor?.id === actor.id).map(t => t.document);
+      for (const token of tokens.filter(t => t?.parent === canvas.scene && t.level === canvas.level?.id)) {
+        const item = { type: 'spell', name: event.name, system: { level: event.spellLevel }, isCantrip: event.spellLevel === 0 };
+        emit({ id: `${event.id}:${token.id}`, item, flags: { dnd5e: { origin: { castRank: event.spellLevel } } } }, token);
+      }
+    });
+  },
+  handlesPlacement: () => false,
+  placementPending: () => false,
+  regionFlagsChanged: () => false,
+  lifetime: (region, settings) => settings.DURATION_SECONDS,
+  placementFlags: message => ({ dnd5e: { messageId: message.id, origin: { name: message.item.name }, item: message.item.uuid, spellLevel: message.flags?.dnd5e?.origin?.castRank } }),
+  preferredSpell: () => null
+};
