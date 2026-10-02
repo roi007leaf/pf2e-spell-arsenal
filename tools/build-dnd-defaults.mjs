@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { inferSpellRule } from '../scripts/spell-parser.js';
@@ -8,6 +8,7 @@ import { matchSpellVisual } from '../scripts/spell-matching.js';
 const [catalogFile, configFile] = process.argv.slice(2);
 if (!catalogFile || !configFile) throw new Error('Usage: node tools/build-dnd-defaults.mjs <exported catalog.json> <Tile Arsenal configs.json>');
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+mkdirSync(path.join(root, '.internal'), { recursive: true });
 const catalog = JSON.parse(readFileSync(catalogFile, 'utf8'));
 const configurations = JSON.parse(readFileSync(configFile, 'utf8')).configurations;
 const audit = [], defaults = { spells: [], spells24: [] }, seen = { spells: new Set(), spells24: new Set() };
@@ -57,11 +58,11 @@ for (const { pack, source, item } of catalog.sort((a, b) => a.pack.localeCompare
 }
 writeFileSync(path.join(root, 'scripts/dnd-default-rules.js'), `// Generated from D&D 5e 6.0.5, release-6.0.5 (3ee48de), and Tile Arsenal 1.1.1.\nexport const DND_LEGACY_RULES = ${JSON.stringify(defaults.spells, null, 2)};\nexport const DND_DEFAULT_RULES = ${JSON.stringify(defaults.spells24, null, 2)};\n`);
 const quote = value => `"${String(value).replaceAll('"', '""')}"`;
-writeFileSync(path.join(root, 'docs/dnd-spell-visual-audit.csv'), ['spell,edition,uuid,source,effect,trigger,templates,status,reason', ...audit.map(row => Object.values(row).map(quote).join(','))].join('\n') + '\n');
+writeFileSync(path.join(root, '.internal/dnd-spell-visual-audit.csv'), ['spell,edition,uuid,source,effect,trigger,templates,status,reason', ...audit.map(row => Object.values(row).map(quote).join(','))].join('\n') + '\n');
 const editions = ['2014', '2024'].map(edition => ({ edition, spells: audit.filter(r => r.edition === edition).length,
   enabled: audit.filter(r => r.edition === edition && r.status === 'enabled').length, review: audit.filter(r => r.edition === edition && r.status === 'review').length,
   unmatched: audit.filter(r => r.edition === edition && r.status === 'unmatched').length }));
 const presets = Object.values(configurations).map(p => ({ name: p.name, preview: p.img, textures: [...new Set(Object.values(p.configs).flatMap(c => [c.config?.['texture.src']].flat(Infinity)).filter(Boolean))], stages: [...new Set(Object.values(p.configs).map(c => c.stage))], types: [...new Set(Object.values(p.configs).map(c => c.type))],
   legacySpells: defaults.spells.filter(r => r.effect === p.name).length, modernSpells: defaults.spells24.filter(r => r.effect === p.name).length }));
-writeFileSync(path.join(root, 'docs/dnd-preset-audit.json'), JSON.stringify({ dnd5e: '6.0.5', sourceTag: 'release-6.0.5', sourceCommit: '3ee48de02f8f6f7b2638c9f6cf3e9540c9c181cc', tileArsenal: '1.1.1', spells: audit.length, editions, presets }, null, 2) + '\n');
+writeFileSync(path.join(root, '.internal/dnd-preset-audit.json'), JSON.stringify({ dnd5e: '6.0.5', sourceTag: 'release-6.0.5', sourceCommit: '3ee48de02f8f6f7b2638c9f6cf3e9540c9c181cc', tileArsenal: '1.1.1', spells: audit.length, editions, presets }, null, 2) + '\n');
 console.log(JSON.stringify({ spells: audit.length, editions }));

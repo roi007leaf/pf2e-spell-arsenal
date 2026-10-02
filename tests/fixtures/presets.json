@@ -1,0 +1,378 @@
+[
+  {
+    "name": "Flooding",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Smoke",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Spikes",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Acid",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Earthquake",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "Region"
+    ]
+  },
+  {
+    "name": "Spiderweb",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Pillar",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "Wall"
+    ]
+  },
+  {
+    "name": "Rift",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Hole",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Magic Light",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Frost",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Fire",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Lava",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Runes",
+    "stages": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Rune 1",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Rune 2",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Rune 3",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Rune 4",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Holy Light",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Unholy Light",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Lightning Field",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Portal",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Magic Circle",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Debris (Wood)",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "Region"
+    ]
+  },
+  {
+    "name": "Debris (Stone)",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "Region"
+    ]
+  },
+  {
+    "name": "Blood",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Magic Platform",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight"
+    ]
+  },
+  {
+    "name": "Sand",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Moss",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Force Barrier",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "Wall",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Wild Magic",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile",
+      "AmbientLight",
+      "AmbientSound"
+    ]
+  },
+  {
+    "name": "Overgrowth",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "types": [
+      "Tile",
+      "Region"
+    ]
+  },
+  {
+    "name": "Haze",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Haze (Deathly)",
+    "stages": [
+      1
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Mold",
+    "stages": [
+      1,
+      2,
+      3
+    ],
+    "types": [
+      "Tile"
+    ]
+  },
+  {
+    "name": "Grease",
+    "stages": [
+      1,
+      2
+    ],
+    "types": [
+      "Tile"
+    ]
+  }
+]

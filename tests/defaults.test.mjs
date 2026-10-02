@@ -6,14 +6,14 @@ import { matchSpellVisual } from '../scripts/spell-matching.js';
 import { inferSpellRule } from '../scripts/spell-parser.js';
 
 test('catalog defaults use audited supported presets and real spell links', () => {
-  const audit = JSON.parse(readFileSync(new URL('../docs/preset-audit.json', import.meta.url)));
+  const presets = JSON.parse(readFileSync(new URL('./fixtures/presets.json', import.meta.url)));
   const rules = validateRules(DEFAULT_RULES);
-  assert.equal(rules.length, audit.enabled);
+  assert.equal(rules.length, 89);
   assert.equal(new Set(rules.map(r => r.spell.toLowerCase())).size, rules.length);
   for (const rule of rules) {
     assert.match(rule.sourceUuid, /^Compendium\.pf2e\.spells-srd\.Item\./);
     assert.notEqual(rule.kind, 'caster');
-    const preset = audit.presets.find(p => p.name === rule.effect);
+    const preset = presets.find(p => p.name === rule.effect);
     assert.ok(preset);
     assert.ok(preset.types.every(t => ['Tile', 'AmbientLight', 'AmbientSound', 'Region'].includes(t)));
     assert.ok(preset.stages.includes(rule.stage));

@@ -4,22 +4,16 @@ import { readFileSync } from 'node:fs';
 import { DND_DEFAULT_RULES, DND_LEGACY_RULES, dndDefaultRules } from '../scripts/dnd5e.js';
 import { validateRules, missingDefaults } from '../scripts/rules.js';
 
-const audit = JSON.parse(readFileSync(new URL('../docs/dnd-preset-audit.json', import.meta.url)));
+const presets = JSON.parse(readFileSync(new URL('./fixtures/presets.json', import.meta.url)));
 
-test('full 5e catalog records both editions and every default has a supported preset and source', () => {
-  assert.equal(audit.spells, 659);
-  assert.equal(audit.editions.reduce((n, edition) => n + edition.spells, 0), audit.spells);
-  const csv = readFileSync(new URL('../docs/dnd-spell-visual-audit.csv', import.meta.url), 'utf8');
-  assert.equal(csv.trim().split('\n').length, audit.spells + 1);
-  for (const [edition, defaults, pack] of [['2014', DND_LEGACY_RULES, 'spells'], ['2024', DND_DEFAULT_RULES, 'spells24']]) {
-    const report = audit.editions.find(row => row.edition === edition);
-    assert.equal(report.enabled + report.review + report.unmatched, report.spells);
+test('5e editions have unique defaults with supported presets and source links', () => {
+  for (const [defaults, pack, count] of [[DND_LEGACY_RULES, 'spells', 27], [DND_DEFAULT_RULES, 'spells24', 36]]) {
     const rules = validateRules(defaults);
-    assert.equal(rules.length, report.enabled);
+    assert.equal(rules.length, count);
     assert.equal(new Set(rules.map(r => r.spell.toLowerCase())).size, rules.length);
     for (const rule of rules) {
       assert.ok(rule.sourceUuid.startsWith(`Compendium.dnd5e.${pack}.Item.`));
-      const preset = audit.presets.find(p => p.name === rule.effect);
+      const preset = presets.find(p => p.name === rule.effect);
       assert.ok(preset);
       assert.ok(preset.stages.includes(rule.stage));
       assert.ok(preset.types.every(type => ['Tile', 'AmbientLight', 'AmbientSound', 'Region'].includes(type)));

@@ -1,39 +1,63 @@
 # Spell Arsenal
 
-Foundry v14 with PF2e, SF2e or D&D 5e 6.0.5+ and Tile Arsenal 1.1.0+.
+Bring your spells to life with automatic **Tile Arsenal** visuals in Foundry VTT. Supports **Pathfinder 2e, Starfinder 2e, and D&D 5e**.
 
-D&D 5e defaults are audited against all 659 spell entries shipped with D&D 5e 6.0.5: 319 from 2014 and 340 from 2024. There are 27 automatic defaults for 2014 and 36 for 2024; the world’s D&D 5e Rules Version setting selects the appropriate catalog. Each rules version has unique spell-name triggers and original compendium links, so differences such as Acid Splash targeting are preserved. **Add missing defaults** adds catalog mappings without overwriting existing customizations. Drop additional spells to read activity damage, every configured template, and structured durations. Native 5e Regions supply actual covered cells and cast level; cantrips stay at stage 1 and upcast spells use their cast level. Linked wand/scroll Cast activities resolve their spells. Damage visuals run after actual HP/temp-HP loss from a spell's damage application, including player applications forwarded to the active GM; unlinked/manual damage has no spell to match. Concentration changes and damage undo are not currently linked to cleanup; delete the source Region or use Pause & clear effects. Tested against installed 5e 6.0.5 data and hooks; a live 5e world smoke test remains necessary.
+Inspired by [Lunatic Dice’s video](https://www.youtube.com/watch?v=w0UHqiM_6U8).
 
-The [5e spell audit](docs/dnd-spell-visual-audit.csv) records every entry, template, suggested preset, status and exclusion reason. The [5e preset audit](docs/dnd-preset-audit.json) gives per-edition counts and covers every Arsenal preset. Safe defaults use single elemental, radiant or necrotic damage types and curated terrain themes. Mixed/choice damage, uncertain placement, unsupported presets, variable template dimensions, oversized areas and concentration-dependent areas require manual review. Concentrating spells that use the Damage trigger still get brief playback when damage is applied. Catalog audit uses official [release-6.0.5](https://github.com/foundryvtt/dnd5e/tree/release-6.0.5/packs/_source) spell data; no artwork or spell descriptions are bundled.
+## What it does
 
-Rebuild 5e defaults with `python tools/export-dnd-catalog.py <D&D 5e packs/_source directory> <catalog.json>` (requires PyYAML), then `node tools/build-dnd-defaults.mjs <catalog.json> <Tile Arsenal assets/configs.json>`.
+- Start with curated spell defaults, or drag spells from sheets and compendiums into the editor.
+- Read spell templates and durations, with suggested Tile Arsenal effects.
+- Trigger visuals when a spell is cast, its area is placed, or its damage is applied.
+- Use the placed area’s actual shape and covered cells.
+- Match visual stages to spell rank or cast level, or choose repeated-cast buildup or a fixed stage.
+- Open spell details and customize each mapping’s effect, duration, and trigger.
+- Suppress overlapping Automated Animations template effects for mapped spells.
 
-Enable **Spell Arsenal**, then Settings → Configure Spell Arsenal.
+Spell Arsenal handles visuals. Your game system handles saves, damage, conditions, and spell resources.
 
-System behavior lives behind `scripts/systems.js`: `pf2e.js` handles PF2e/SF2e, while `dnd5e.js` handles D&D 5e. Both adapters provide spell parsing, defaults, cast/damage events, region metadata and placement integration. UI, visual rendering, grid coverage, stage selection and effect cleanup are shared.
+## Requirements
 
-89 PF2e default mappings, audited against all 1,994 spell entries in PF2e 8.5.1 and all 38 Tile Arsenal 1.1.1 presets. Caustic Blast, Fireball and Grim Tendrils follow their areas; Scatter Scree uses stone debris for one minute; Grease uses four touching cells for one minute. **Add missing defaults** adds new mappings while preserving existing overrides; save to apply.
+- **Foundry VTT v14**
+- **PF2e, SF2e, or D&D 5e** (D&D 5e version **6.0.5+**)
+- **Tile Arsenal 1.1.0+**, installed and enabled
+- A square or hex grid and an active GM online
 
-Defaults use curated visual themes or a single supported elemental damage type. Mixed damage, sustained/variable durations, rituals, uncertain target placement, oversized areas and presets requiring walls remain excluded. The complete [spell audit](docs/spell-visual-audit.csv) records enabled, review and unmatched entries; the [preset audit](docs/preset-audit.json) lists textures, stages and document types. Unmatched means no suitable automatic visual, not an unsupported PF2e spell. Custom mappings remain available. Rebuild using `node tools/build-defaults.mjs <PF2e packs/pf2e/spells directory> <Tile Arsenal assets/configs.json>` against the stated versions. Copied visual Regions have their behaviors removed.
+## Install
 
-Mappings persist as world settings. Automation starts on refresh in the active GM session. The editor supports adding/removing spells, per-rule switches, Tile Arsenal preset suggestions, stage, seconds, cell count and region highlight visibility. Area duration zero persists until region deleted. Casting a spell without a system area uses the touching-cell picker; Escape cancels placement.
+In Foundry’s **Add-on Modules → Install Module**, paste this manifest URL:
 
-Drag spell Items from character sheets or compendiums into the editor. Structured area data selects Area; damaging spells without areas select Damage; other spells select Cast. Damage types and traits suggest installed Tile Arsenal presets. Grease, Scatter Scree and Grim Tendrils have specific suggestions. Explicit English rounds/minutes/hours/days convert to visual seconds for lasting areas; sustained or open-ended areas stay until region deletion. Instant visuals default to five seconds. These timers use real time, not combat rounds. Unrecognized/localized duration text needs review. Ambiguous or unavailable effects create disabled mappings for manual choice. Existing spell mappings retain their overrides on duplicate drops. Dropped rows require Save mappings.
+```text
+https://github.com/roi007leaf/spell-arsenal/releases/download/0.1.0/module.json
+```
 
-When structured area data is missing, description `@Template[...]` links also select Area. Place the desired template using the spell's description buttons; visuals use its actual covered cells. English contiguous 5-foot-square descriptions supply the manual picker count when no template link exists. Variable template distances are left to PF2e to resolve. Mapping cards list all unique native and description template options, including line widths. Existing mappings load these details from their linked spell or a matching spell compendium; re-dropping a spell refreshes its link and template metadata while preserving overrides. Search filters cards without excluding hidden mappings from saving.
+Enable **Spell Arsenal** and **Tile Arsenal** in your world. This is an early prerelease; [feedback and bug reports](https://github.com/roi007leaf/spell-arsenal/issues) are welcome.
 
-Deleting a source region removes generated documents. Damage undo removes its visuals. Cleanup pauses automation and removes only this module's generated effects across scenes, restoring owned region highlight changes. The original source spell regions remain. Effects stay at their original positions.
+## Quick start
 
-Visuals only: no saves, damage, conditions, spell-slot spending or rules automation. Square and hex grids supported; gridless unsupported. Keep an active GM online for real-time cleanup. Refresh removes interrupted token effects; timed areas retain their original expiry, including in unviewed scenes. Persistent areas recover when their scene is viewed. Wizard-managed lasting areas follow their source region's lifetime. AutoAnimations template effects are suppressed for mapped spells; Wizard tile textures remain untouched. Previously hidden Wizard tiles restore their saved opacity on refresh.
+1. Open **Settings → Configure Spell Arsenal** as GM.
+2. Use the defaults, or drag in a spell to add a mapping.
+3. Review the suggested effect, trigger, and duration, then click **Save mappings**.
+4. Cast the spell and place its area or apply its damage as usual.
 
-## Duration and buildup
+Use **Add missing defaults** to add catalog mappings while keeping your customizations. D&D defaults follow your world’s 2014 or 2024 Rules Version setting. Not every spell has a suitable automatic visual; you can configure additional spells yourself.
 
-Spells without a duration are marked Instant, with no seconds field. Brief visual playback cleanup remains separate (currently five seconds); it does not represent a spell lifetime. Legacy five-second fallback mappings display as Instant. Uncheck Instant only to explicitly override a mapping as lasting.
+## Customize your visuals
 
-Stages default to Spell rank, including existing automatic mappings: cantrips use stage 1; other spells use the nearest available stage at or below their cast rank, capped at preset maximum. Repeated casts do not increase rank-based stages. Choose Cast buildup for repeated-cast escalation: first active effect in a cell uses the preset's first available stage; another cast of the same effect in that scene/level/cell advances to the next available stage, capped at maximum. Overlapping cells replace prior visuals; other cells stay unchanged. Expired/deleted visuals no longer count. Region edits and recovery preserve their current stage rather than counting as casts. Superseded cells do not replay from old source regions. Choose Fixed to set a stage manually. Native Tile Arsenal placements are independent of this module's buildup.
+**Triggers:** Area follows a placed spell region; Damage plays on the damaged token; Cast plays on the caster. Spells without a template can use a picker for touching cells.
+
+**Duration:** Instant spells get brief visual playback. Lasting spells can use a duration in seconds, rounds, minutes, hours, or days. Timers use real time. Lasting areas with duration zero remain until their source region is deleted.
+
+**Stages:** Spell rank uses the available stage closest to the cast rank or level. Cantrips use stage 1. Cast buildup increases the stage when the same effect is cast again in an occupied cell. Fixed lets you choose manually.
+
+**Cleanup:** Delete the source region to remove its visuals, or use **Pause & clear effects** to stop automation and clear generated effects across scenes.
+
+## Current limitations
+
+- Gridless scenes are unsupported.
+- Imported suggestions may need adjustment, especially for unusual spells or localized duration text.
+- D&D concentration changes and damage undo do not automatically clear visuals. Delete the source region or use **Pause & clear effects**.
 
 ## Credits
 
-Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8). Tile Arsenal artwork and sounds are loaded from the installed dependency and are not bundled.
-
-Validation: `npm test`. The rewritten runtime has automated coverage for damage, undo, buildup, template cells, region edits, deletion and Wizard recovery. The rewritten runtime still needs a Foundry smoke test.
+Inspired by **Lunatic Dice**. Artwork and sounds come from your installed **Tile Arsenal** module and are not bundled here.
