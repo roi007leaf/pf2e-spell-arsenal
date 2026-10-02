@@ -1,4 +1,4 @@
-import { stageRecords, chooseStage, replaceOverlaps } from './stages.js';
+import { stageRecords, chooseStage, spellStageRank, replaceOverlaps } from './stages.js';
 import { spellAreaInfo } from './spell-parser.js';
 import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, WIZARD_ID } from './template-wizard.js';
 
@@ -163,7 +163,7 @@ class SpellVisualRunner {
     this.submit(() => this.renderToken(message, token, snapshot));
   }
 
-  async createVisuals(scene, source, cells, decorate, duration) {
+  async createVisuals(scene, source, cells, decorate, duration, rank = 1) {
     const batches = new Map();
     const previous = [];
     const existing = this.owned(scene, source);
@@ -172,7 +172,7 @@ class SpellVisualRunner {
     for (const offset of cells) {
       const cell = `${offset.i}:${offset.j}`;
       const records = stageRecords(scene, normalized(this.settings.EFFECT_NAME), canvas.level.id, cell);
-      const stage = chooseStage(records, source, this.stages, this.settings.STAGE_MODE ?? 'auto', this.settings.STAGE);
+      const stage = chooseStage(records, source, this.stages, this.settings.STAGE_MODE ?? 'auto', this.settings.STAGE, rank);
       previous.push(...records);
       for (const [type, rows] of this.preset.toDocumentData(offset, stage)) {
         if (!documentTypes.includes(type) || (this.kind !== 'area' && type === 'Region')) throw new Error(`Unsupported visual document: ${type}`);
@@ -232,7 +232,7 @@ class SpellVisualRunner {
       data.y = Math.round(data.y + position.center.y - center.y);
       data.elevation = this.kind === 'caster' ? data.elevation + position.elevation - canvas.level.elevation.base
         : position.elevation + (type === 'Tile' ? this.settings.TILE_ELEVATION_OFFSET ?? 0.1 : 0);
-    }, this.settings.DURATION_SECONDS);
+    }, this.settings.DURATION_SECONDS, spellStageRank(message.item, message.flags?.[game.system.id]?.origin));
     if (!this.enabled || message.flags?.[game.system.id]?.appliedDamage?.isReverted) await this.erase(token.parent, message.id);
   }
 
@@ -245,10 +245,12 @@ class SpellVisualRunner {
     const cells = [...coverage.covered].filter(offset => !region.flags?.world?.spellArsenalSuperseded?.[`${canvas.level.id}:${offset.i}:${offset.j}`]);
     if (cells.length > 120) throw new Error('Spell areas support up to 120 cells.');
     const ground = Math.max(canvas.level.elevation.base, Number.isFinite(region.elevation.bottom) ? region.elevation.bottom : canvas.level.elevation.base);
+    const origin = region.flags?.[game.system.id]?.origin;
+    const spell = region.message?.item ?? (globalThis.fromUuidSync ? wizardRegionSpell(region) ?? (origin?.uuid ? globalThis.fromUuidSync(origin.uuid) : null) : null);
     const created = await this.createVisuals(region.parent, region.id, cells, (data, type) => {
       data.hidden = region.hidden;
       data.elevation = type === 'Region' ? { bottom: ground, top: ground, topInclusive: true } : ground;
-    }, this.lifetime(region));
+    }, this.lifetime(region), spellStageRank(spell, origin));
     if (!created) { this.finished.add(region.uuid); await this.restoreOverlay(region); return; }
     if (!region.parent.regions.has(region.id) || !this.enabled || !authorized()) { await this.erase(region.parent, region.id); return; }
     if (this.settings.REGION_HIGHLIGHT_ONLY_WHILE_EDITING && region.visibility !== CONST.REGION_VISIBILITY.LAYER) {

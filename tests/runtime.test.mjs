@@ -183,13 +183,30 @@ test('healing, reverted damage and non-GM clients cannot spawn visuals', async (
   assert.equal(env.hooks.size, 0);
 });
 
+test('damage visuals use cast rank and repeated cantrips retain first stage', async () => {
+  const env = environment();
+  tileArsenal.utils.getConfigurations = async () => ({ configurations: { acid: {
+    name: 'Acid', configs: { first: { type: 'Tile', stage: 1 }, second: { type: 'Tile', stage: 2 } },
+    toDocumentData: (offset, stage) => new Map([['Tile', [{ x: 0, y: 0, testStage: stage }]]])
+  } } });
+  const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'pf2e-spell-arsenal:rank');
+  try {
+    env.emit('createChatMessage', { ...env.message, item: { ...env.message.item, rank: 5 } });
+    await state.queue; assert.equal(env.docs[0].testStage, 2);
+    for (const id of ['cantrip-one', 'cantrip-two']) {
+      env.emit('createChatMessage', { ...env.message, id, item: { ...env.message.item, rank: 8, isCantrip: true } });
+      await state.queue; assert.equal(env.docs.length, 1); assert.equal(env.docs[0].testStage, 1);
+    }
+  } finally { await state.stop(); }
+});
+
 test('queued repeat damage advances and replaces cell visuals; removal resets stage', async () => {
   const env = environment();
   tileArsenal.utils.getConfigurations = async () => ({ configurations: { acid: {
     name: 'Acid', configs: { first: { type: 'Tile', stage: 1 }, second: { type: 'Tile', stage: 2 } },
     toDocumentData: (offset, stage) => new Map([['Tile', [{ x: 0, y: 0, elevation: 0, testStage: stage }]]])
   } } });
-  const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'pf2e-spell-arsenal:repeat');
+  const state = await runSpellEffect('damage', { ...runtimeSettings(DEFAULT_RULES[0]), STAGE_MODE: 'buildup' }, 'pf2e-spell-arsenal:repeat');
   try {
     for (const id of ['one', 'two', 'three']) env.emit('createChatMessage', { ...env.message, id });
     await state.queue;

@@ -1,13 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseStage, stageRecords, replaceOverlaps } from '../scripts/stages.js';
+import { chooseStage, spellStageRank, stageRecords, replaceOverlaps } from '../scripts/stages.js';
+
+test('rank stages cap, handle sparse presets and never escalate repeated cantrips', () => {
+  assert.equal(chooseStage([], 'spell', [1, 2, 3], 'auto', 1, 2), 2);
+  assert.equal(chooseStage([], 'spell', [1, 2], 'auto', 1, 10), 2);
+  assert.equal(chooseStage([], 'spell', [1, 3], 'auto', 1, 2), 1);
+  assert.equal(chooseStage([{ data: { source: 'old', stage: 3 } }], 'new', [1, 2, 3], 'auto', 1, 1), 1);
+  assert.equal(spellStageRank({ rank: 8, isCantrip: true }), 1);
+  assert.equal(spellStageRank({ rank: 3 }, { castRank: 6 }), 6);
+  assert.equal(spellStageRank(null, { rollOptions: ['origin:item:rank:5'] }), 5);
+  assert.equal(spellStageRank(null, { rollOptions: ['origin:item:rank:5', 'origin:item:trait:cantrip'] }), 1);
+  assert.equal(spellStageRank({ system: { location: { heightenedLevel: 7 }, level: { value: 2 } } }), 7);
+});
 const record = (stage, source = 'first') => ({ data: { stage, source } });
 test('first cast, recast, cap, sparse presets and fixed override', () => {
-  assert.equal(chooseStage([], 'first', [1, 2], 'auto', 1), 1);
-  assert.equal(chooseStage([record(1)], 'second', [1, 2], 'auto', 1), 2);
-  assert.equal(chooseStage([record(2)], 'third', [1, 2], 'auto', 1), 2);
-  assert.equal(chooseStage([record(1)], 'second', [1, 3], 'auto', 1), 3);
-  assert.equal(chooseStage([record(1)], 'first', [1, 2], 'auto', 1), 1);
+  assert.equal(chooseStage([], 'first', [1, 2], 'buildup', 1), 1);
+  assert.equal(chooseStage([record(1)], 'second', [1, 2], 'buildup', 1), 2);
+  assert.equal(chooseStage([record(2)], 'third', [1, 2], 'buildup', 1), 2);
+  assert.equal(chooseStage([record(1)], 'second', [1, 3], 'buildup', 1), 3);
+  assert.equal(chooseStage([record(1)], 'first', [1, 2], 'buildup', 1), 1);
   assert.equal(chooseStage([record(2)], 'third', [1, 2], 'fixed', 1), 1);
 });
 test('buildup isolated by effect, cell, scene and level; expiry resets', () => {

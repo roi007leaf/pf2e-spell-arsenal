@@ -33,7 +33,7 @@ export function validateRules(rules) {
     if (typeof rule.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(rule.id) || ids.has(rule.id)) throw new Error('Mapping IDs must be unique.');
     ids.add(rule.id);
     const stageMode = rule.stageMode ?? 'auto';
-    if (!['auto', 'fixed'].includes(stageMode)) throw new Error('Stage mode must be auto or fixed.');
+    if (!['auto', 'buildup', 'fixed'].includes(stageMode)) throw new Error('Stage mode must be auto, buildup or fixed.');
     if (typeof rule.enabled !== 'boolean' || typeof rule.highlight !== 'boolean') throw new Error('Invalid mapping toggle.');
     if (rule.instant !== undefined && typeof rule.instant !== 'boolean') throw new Error('Invalid instant toggle.');
     if (rule.hasTemplate !== undefined && typeof rule.hasTemplate !== 'boolean') throw new Error('Invalid template toggle.');
