@@ -239,8 +239,15 @@ class SpellVisualRunner {
     if (!region.parent.regions.has(region.id) || this.adapter.placementPending(region) || this.finished.has(region.uuid)) return;
     if (!this.visible(region)) { await this.erase(region.parent, region.id); return; }
     if (canvas.grid.isGridless) throw new Error('Spell visuals require a grid.');
-    const coverage = region.getCoverage(canvas.level);
-    if (!coverage) throw new Error('The spell region has no grid coverage.');
+    // Region creation can precede canvas coverage preparation.
+    let coverage = region.getCoverage(canvas.level);
+    for (let attempt = 0; !coverage && attempt < 5; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      if (!this.enabled || !authorized() || !region.parent.regions.has(region.id) || !this.visible(region) || this.adapter.placementPending(region)) return;
+      coverage = region.getCoverage(canvas.level);
+    }
+    // Inapplicable or still preparing coverage can be retried by region updates/canvasReady.
+    if (!coverage) return;
     const cells = [...coverage.covered].filter(offset => !region.flags?.world?.spellArsenalSuperseded?.[`${canvas.level.id}:${offset.i}:${offset.j}`]);
     if (cells.length > 120) throw new Error('Spell areas support up to 120 cells.');
     const ground = Math.max(canvas.level.elevation.base, Number.isFinite(region.elevation.bottom) ? region.elevation.bottom : canvas.level.elevation.base);

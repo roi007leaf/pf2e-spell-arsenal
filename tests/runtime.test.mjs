@@ -52,6 +52,26 @@ test('area lifecycle uses template cells, preserves edits and recovers Wizard ar
   } finally { await state.stop(); }
 });
 
+test('new area waits for asynchronous grid coverage without reporting an error', async () => {
+  const env = environment();
+  const scene = canvas.scene;
+  scene.regions = new Map();
+  scene.regions[Symbol.iterator] = scene.regions.values.bind(scene.regions);
+  const state = await runSpellEffect('area', runtimeSettings(DEFAULT_RULES[0]), 'coverage-ready');
+  let ready = false;
+  const region = { id: 'pending', uuid: 'Scene.test.Region.pending', parent: scene, levels: new Set(['level']),
+    elevation: { bottom: 0 }, flags: { pf2e: { origin: { name: 'Caustic Blast' } } },
+    getCoverage: () => ready ? { covered: [{ i: 0, j: 0 }] } : null };
+  try {
+    scene.regions.set(region.id, region);
+    env.emit('createRegion', region);
+    setTimeout(() => { ready = true; }, 20);
+    await state.queue;
+    assert.equal(env.docs.length, 1);
+    assert.deepEqual(env.errors, []);
+  } finally { await state.stop(); }
+});
+
 test('preset regions never copy gameplay behaviors', async () => {
   const env = environment();
   const preset = { name: 'Acid', configs: { region: { stage: 1, type: 'Region' } },

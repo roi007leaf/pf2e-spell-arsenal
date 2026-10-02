@@ -28,7 +28,7 @@ Spell Arsenal handles visuals. Your game system handles saves, damage, condition
 In Foundry’s **Add-on Modules → Install Module**, paste this manifest URL:
 
 ```text
-https://github.com/roi007leaf/spell-arsenal/releases/download/0.1.0/module.json
+https://github.com/roi007leaf/spell-arsenal/releases/download/0.1.1/module.json
 ```
 
 Enable **Spell Arsenal** and **Tile Arsenal** in your world. This is an early prerelease; [feedback and bug reports](https://github.com/roi007leaf/spell-arsenal/issues) are welcome.
