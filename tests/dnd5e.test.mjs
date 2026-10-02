@@ -17,7 +17,7 @@ test('5e activity damage, multiple templates and structured durations import cor
   assert.equal(rule.duration, 60); assert.equal(rule.instant, false);
   assert.deepEqual(spellAreaInfo(item).templateDetails, ['20 ft sphere', '30 × 10 ft cone']);
   assert.equal(rule.sourceUuid, item.uuid);
-  assert.equal(validateRules(DND_DEFAULT_RULES).length, 9);
+  assert.equal(validateRules(DND_DEFAULT_RULES).length, 36);
 });
 
 test('5e cantrips, mixed damage and healing do not infer misleading effects', () => {

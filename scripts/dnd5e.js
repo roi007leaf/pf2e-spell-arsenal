@@ -51,9 +51,10 @@ export function forwardDndDamage(actor, changes, options) {
     if (!Object.keys(changes.flags).length) delete changes.flags;
   }
 }
-export const DND_DEFAULT_RULES = [
-  ['Fireball', 'Fire', 'area', 0], ['Burning Hands', 'Fire', 'area', 0], ['Fire Bolt', 'Fire', 'damage', 0],
-  ['Ray of Frost', 'Frost', 'damage', 0], ['Acid Splash', 'Acid', 'area', 0], ['Lightning Bolt', 'Lightning Field', 'area', 0],
-  ['Grease', 'Grease', 'area', 60], ['Web', 'Spiderweb', 'area', 3600], ['Fog Cloud', 'Smoke', 'area', 3600]
-].map(([spell, effect, kind, duration]) => ({ id: spell.toLowerCase().replaceAll(' ', '-'), spell, effect, kind, duration,
-  enabled: true, instant: !duration, stage: 1, stageMode: 'auto', squares: 4, highlight: kind === 'area' && duration > 0, hasTemplate: kind === 'area' }));
+export function dndDefaultRules() {
+  let version;
+  try { version = game.settings.get('dnd5e', 'rulesVersion'); } catch { version = 'modern'; }
+  return version === 'legacy' ? DND_LEGACY_RULES : DND_DEFAULT_RULES;
+}
+import { DND_DEFAULT_RULES, DND_LEGACY_RULES } from './dnd-default-rules.js';
+export { DND_DEFAULT_RULES, DND_LEGACY_RULES };

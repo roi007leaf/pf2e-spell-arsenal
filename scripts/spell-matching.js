@@ -1,6 +1,8 @@
 const themes = {
   Grease: ['grease'], 'Debris (Stone)': ['scatter-scree'], Spiderweb: ['web'],
-  Overgrowth: ['entangling-flora', 'gluttonous-growth', 'flourishing-flora'],
+  Overgrowth: ['entangling-flora', 'gluttonous-growth', 'flourishing-flora', 'entangle', 'plant-growth'],
+  Spikes: ['spike-growth'], Haze: ['stinking-cloud', 'cloudkill'],
+  'Magic Circle': ['magic-circle', 'teleportation-circle'],
   Sand: ['scouring-sand', 'shifting-sand', 'glass-sand', 'control-sand'],
   Smoke: ['mist', 'solid-fog', 'obscuring-mist', 'fog-cloud'], 'Haze (Deathly)': ['darkness', 'ravenous-darkness', 'consuming-darkness', 'sanguine-mist'],
   Lava: ['volcanic-eruption'], Rift: ['fiendish-rift'], Earthquake: ['earthquake'],
@@ -8,9 +10,9 @@ const themes = {
   'Magic Light': ['light', 'everlight', 'revealing-light'], Runes: ['sigil', 'message-rune', 'temporary-glyph'],
   Portal: ['gate', 'space-fold-gate', 'ravenous-portal', 'forest-of-gates'],
   'Force Barrier': ['wall-of-force', 'force-cage'], Pillar: ['pillars-of-sand'],
-  Flooding: ['deluge', 'whirlpool', 'wall-of-water'], 'Magic Platform': ['moonlight-bridge']
+  Flooding: ['deluge', 'whirlpool', 'wall-of-water', 'control-water', 'create-or-destroy-water'], 'Magic Platform': ['moonlight-bridge']
 };
-const elemental = { acid: 'Acid', cold: 'Frost', electricity: 'Lightning Field', fire: 'Fire', bleed: 'Blood' };
+const elemental = { acid: 'Acid', cold: 'Frost', electricity: 'Lightning Field', fire: 'Fire', bleed: 'Blood', radiant: 'Holy Light', necrotic: 'Unholy Light' };
 export function matchSpellVisual(item) {
   const slug = item.system?.slug || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   for (const [effect, slugs] of Object.entries(themes)) if (slugs.includes(slug)) return { effect, reason: `Curated ${slug} visual theme`, confidence: 'curated' };
