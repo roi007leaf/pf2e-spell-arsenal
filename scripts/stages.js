@@ -9,9 +9,9 @@ export function stageRecords(scene, effect, levelId, offset, now = Date.now()) {
 }
 export function spellStageRank(spell, origin = {}) {
   const options = origin?.rollOptions ?? [];
-  if (spell?.isCantrip || spell?.system?.traits?.value?.includes('cantrip') || options.includes('origin:item:trait:cantrip')) return 1;
+  if (spell?.isCantrip || spell?.system?.level === 0 || spell?.system?.traits?.value?.includes('cantrip') || options.includes('origin:item:trait:cantrip')) return 1;
   const storedRank = options.find(option => /^origin:item:rank:\d+$/.test(option))?.split(':').at(-1);
-  const rank = origin?.castRank ?? storedRank ?? spell?.rank ?? spell?.system?.location?.heightenedLevel ?? spell?.system?.level?.value;
+  const rank = origin?.castRank ?? storedRank ?? spell?.rank ?? spell?.system?.location?.heightenedLevel ?? (typeof spell?.system?.level === 'number' ? spell.system.level : spell?.system?.level?.value);
   return Number.isFinite(Number(rank)) && Number(rank) > 0 ? Number(rank) : 1;
 }
 export function chooseStage(records, source, stages, mode, fixed, rank = 1) {

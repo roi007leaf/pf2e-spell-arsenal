@@ -1,9 +1,14 @@
 // Description markup is read as data; it is never executed.
 import { wizardTemplateDetails } from './wizard-template-details.js';
 import { matchSpellVisual } from './spell-matching.js';
+import { isDndSpell, dndSpellData, dndTemplateDetails, activities } from './dnd5e.js';
 const visuals = { fire: 'Fire', cold: 'Frost', acid: 'Acid', electricity: 'Lightning Field', sonic: 'Earthquake', force: 'Force Barrier', vitality: 'Holy Light', void: 'Unholy Light' };
 
 export function spellAreaInfo(item) {
+  if (isDndSpell(item)) {
+    const templateDetails = dndTemplateDetails(item);
+    return { hasTemplate: templateDetails.length > 0, templateDetails, summary: templateDetails.join(' / ') || 'No spell template' };
+  }
   const system = item?.system ?? {};
   const description = String(system.description?.value ?? '');
   const shapes = new Set(['burst', 'cone', 'cube', 'cylinder', 'emanation', 'line', 'ring', 'square']);
@@ -36,6 +41,10 @@ export function spellAreaInfo(item) {
 
 export function containedSpell(item) {
   if (item?.type === 'spell') return item;
+  if (item?.system?.activities) {
+    const casts = activities(item).filter(a => a.type === 'cast');
+    if (casts.length === 1 && casts[0].cachedSpell?.type === 'spell') return casts[0].cachedSpell;
+  }
   if (item?.type !== 'consumable') return null;
   const stored = item.system?.spell;
   const supplied = Object.getOwnPropertyDescriptor(item, 'embeddedSpell')?.value;
@@ -47,8 +56,10 @@ export function containedSpell(item) {
 export function inferSpellRule(item, configurations, id) {
   item = containedSpell(item);
   if (!item) throw new Error('Drop a spell or a wand/scroll containing a spell.');
+  const original = item;
+  if (isDndSpell(item)) item = dndSpellData(item);
   const system = item.system ?? {};
-  const area = spellAreaInfo(item);
+  const area = spellAreaInfo(original);
   const traits = new Set(system.traits?.value ?? []);
   const damage = Object.values(system.damage ?? {}).filter(part => {
     if (!part || typeof part !== 'object') return false;
@@ -87,7 +98,11 @@ export async function resolveSpellDrop(event, ItemClass) {
   try { data = JSON.parse(raw || '{}'); } catch { throw new Error('Drop a spell from a sheet or compendium.'); }
   if (data.type !== 'Item') throw new Error('Drop a spell Item.');
   const item = await ItemClass.fromDropData(data);
-  const spell = containedSpell(item);
+  let spell = containedSpell(item);
+  if (!spell && item?.system?.activities) {
+    const casts = activities(item).filter(a => a.type === 'cast' && a.spell?.uuid);
+    if (casts.length === 1) spell = await fromUuid(casts[0].spell.uuid);
+  }
   if (!spell) throw new Error('Only spell Items or spell-containing wands/scrolls can be imported.');
   return spell;
 }

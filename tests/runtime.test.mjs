@@ -183,6 +183,36 @@ test('healing, reverted damage and non-GM clients cannot spawn visuals', async (
   assert.equal(env.hooks.size, 0);
 });
 
+test('5e native regions and applied damage share visual lifecycle and cast-level stages', async () => {
+  const env = environment(); game.system.id = 'dnd5e';
+  const spell = { type: 'spell', name: 'Fireball', uuid: 'Actor.caster.Item.fireball', system: { level: 3 } };
+  globalThis.fromUuidSync = uuid => uuid === spell.uuid ? spell : null;
+  tileArsenal.utils.getConfigurations = async () => ({ configurations: { fire: {
+    name: 'Fire', configs: { first: { type: 'Tile', stage: 1 }, second: { type: 'Tile', stage: 2 } },
+    toDocumentData: (offset, stage) => new Map([['Tile', [{ x: 0, y: 0, testStage: stage }]]])
+  } } });
+  const region = { id: 'fireball-area', uuid: 'Scene.test.Region.fireball-area', parent: canvas.scene, elevation: { bottom: 0 }, levels: new Set(['level']),
+    flags: { dnd5e: { item: spell.uuid, origin: 'Scene.test.Token.caster', spellLevel: 6 } }, getCoverage: () => ({ covered: [{ i: 0, j: 0 }, { i: 0, j: 1 }] }) };
+  canvas.scene.regions = new Map(); canvas.scene.regions[Symbol.iterator] = canvas.scene.regions.values.bind(canvas.scene.regions);
+  const settings = { ...runtimeSettings(DEFAULT_RULES[0]), SPELL_NAME: 'Fireball', EFFECT_NAME: 'Fire' };
+  const area = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:dnd-area');
+  try {
+    canvas.scene.regions.set(region.id, region); env.emit('createRegion', region); await area.queue;
+    assert.equal(env.docs.length, 2); assert.ok(env.docs.every(d => d.testStage === 2));
+    canvas.scene.regions.delete(region.id); env.emit('deleteRegion', region); await area.queue;
+    assert.equal(env.docs.length, 0);
+  } finally { await area.stop(); }
+  const damage = await runSpellEffect('damage', settings, 'pf2e-spell-arsenal:dnd-damage');
+  const token = { id: 'target-token', parent: canvas.scene, level: 'level', elevation: 0, getCenterPoint: () => ({ x: 50, y: 50 }) };
+  try {
+    const actor = { id: 'target', isToken: true, token };
+    env.emit('updateActor', actor, {}, {}); await damage.queue; assert.equal(env.docs.length, 0);
+    env.emit('updateActor', actor, {}, { spellArsenalDamageEvent: { id: 'damage', actorId: actor.id, name: 'Fireball', spellLevel: 5 } });
+    await damage.queue; assert.equal(env.docs.length, 1); assert.equal(env.docs[0].testStage, 2);
+    assert.deepEqual(env.errors, []);
+  } finally { await damage.stop(); }
+});
+
 test('damage visuals use cast rank and repeated cantrips retain first stage', async () => {
   const env = environment();
   tileArsenal.utils.getConfigurations = async () => ({ configurations: { acid: {

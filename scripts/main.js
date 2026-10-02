@@ -3,6 +3,7 @@ import { runSpellEffect } from './runtime.js';
 import { SpellArsenalConfig } from './ui.js';
 import { restoreWizardTextures, wizardRegionSpell, wizardPlacementPending } from './template-wizard.js';
 import { rememberAnimationRegion, preventMappedAnimation, suppressMappedAnimations } from './animation-integration.js';
+import { DND_DEFAULT_RULES, annotateDndCast, annotateDndDamage, forwardDndDamage } from './dnd5e.js';
 
 const states = new Map();
 let queue = Promise.resolve();
@@ -60,7 +61,7 @@ async function clearEffects() {
 
 Hooks.once('init', () => {
   game.settings.register(MODULE_ID, 'enabled', { name: 'Enable spell visuals', hint: 'Automatically run mappings in the active GM session.', scope: 'world', config: true, type: Boolean, default: true, onChange: synchronize });
-  game.settings.register(MODULE_ID, 'rules', { scope: 'world', config: false, type: Array, default: DEFAULT_RULES, onChange: synchronize });
+  game.settings.register(MODULE_ID, 'rules', { scope: 'world', config: false, type: Array, default: game.system.id === 'dnd5e' ? DND_DEFAULT_RULES : DEFAULT_RULES, onChange: synchronize });
   game.settings.registerMenu(MODULE_ID, 'configure', { name: 'Spell mappings', label: 'Configure Spell Arsenal', hint: 'Add spells, choose Tile Arsenal effects, manage durations and triggers.', icon: 'fas fa-wand-magic-sparkles', type: SpellArsenalConfig, restricted: true });
 });
 
@@ -87,5 +88,8 @@ Hooks.on('userConnected', synchronize);
 Hooks.on('createRegion', rememberAnimationRegion);
 Hooks.on('deleteRegion', rememberAnimationRegion);
 Hooks.on('preCreateSequencerEffect', preventMappedAnimation);
+Hooks.on('dnd5e.preCreateUsageMessage', annotateDndCast);
+Hooks.on('dnd5e.preApplyDamage', annotateDndDamage);
+Hooks.on('preUpdateActor', forwardDndDamage);
 Hooks.on('createSequencerEffect', () => { suppressMappedAnimations().catch(report); });
 Hooks.on('sequencerEffectManagerReady', () => { suppressMappedAnimations().catch(report); });

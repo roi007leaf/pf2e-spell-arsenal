@@ -1,15 +1,15 @@
 {
   "id": "pf2e-spell-arsenal",
   "title": "PF2e Spell Arsenal",
-  "description": "Configurable PF2e and SF2e spell visuals powered by Tile Arsenal.",
-  "version": "0.1.0",
+  "description": "Configurable PF2e, SF2e and D&D 5e spell visuals powered by Tile Arsenal.",
+  "version": "0.1.1",
   "url": "https://github.com/roi007leaf/pf2e-spell-arsenal",
-  "manifest": "https://github.com/roi007leaf/pf2e-spell-arsenal/releases/download/0.1.0/module.json",
-  "download": "https://github.com/roi007leaf/pf2e-spell-arsenal/releases/download/0.1.0/module.zip",
+  "manifest": "https://github.com/roi007leaf/pf2e-spell-arsenal/releases/download/0.1.1/module.json",
+  "download": "https://github.com/roi007leaf/pf2e-spell-arsenal/releases/download/0.1.1/module.zip",
   "compatibility": { "minimum": "14", "verified": "14", "maximum": "14" },
   "authors": [{ "name": "Spell Arsenal contributors" }],
   "relationships": {
-    "systems": [{ "id": "pf2e", "type": "system" }, { "id": "sf2e", "type": "system" }],
+    "systems": [{ "id": "pf2e", "type": "system" }, { "id": "sf2e", "type": "system" }, { "id": "dnd5e", "type": "system", "compatibility": { "minimum": "6.0.5" } }],
     "requires": [{ "id": "tile-arsenal", "type": "module", "compatibility": { "minimum": "1.1.0" } }]
   },
   "esmodules": ["scripts/main.js"],

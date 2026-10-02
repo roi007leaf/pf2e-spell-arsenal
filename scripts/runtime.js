@@ -1,6 +1,7 @@
 import { stageRecords, chooseStage, spellStageRank, replaceOverlaps } from './stages.js';
 import { spellAreaInfo } from './spell-parser.js';
 import { wizardHandlesPlacement, wizardRegionSpell, wizardPlacementPending, wizardFlagsChanged, WIZARD_ID } from './template-wizard.js';
+import { dndRegionSpell, dndMessageSpell } from './dnd5e.js';
 
 const documentTypes = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
 const ownershipFlags = { area: 'spellArsenalArea', damage: 'spellArsenalDamage', caster: 'spellArsenalCaster' };
@@ -72,7 +73,7 @@ class SpellVisualRunner {
   matches(region) {
     if (region.flags?.world?.[this.flag]) return false;
     const origin = region.flags?.[game.system.id]?.origin;
-    return normalized(origin?.name ?? region.message?.item?.name ?? wizardRegionSpell(region)?.name) === normalized(this.settings.SPELL_NAME);
+    return normalized(origin?.name ?? region.message?.item?.name ?? dndRegionSpell(region)?.name ?? wizardRegionSpell(region)?.name) === normalized(this.settings.SPELL_NAME);
   }
 
   visible(region) {
@@ -87,6 +88,17 @@ class SpellVisualRunner {
 
   async start() {
     this.listen('createChatMessage', message => this.handleMessage(message));
+    if (game.system.id === 'dnd5e' && this.kind === 'damage') this.listen('updateActor', (actor, changes, options) => {
+      const event = options.spellArsenalDamageEvent;
+      if (!event || event.actorId !== actor.id || normalized(event.name) !== normalized(this.settings.SPELL_NAME)) return;
+      const tokens = actor.isToken ? [actor.token] : (canvas.tokens?.placeables ?? []).filter(t => t.actor?.id === actor.id).map(t => t.document);
+      for (const token of tokens.filter(t => t?.parent === canvas.scene && t.level === canvas.level?.id)) {
+        const item = { type: 'spell', name: event.name, system: { level: event.spellLevel }, isCantrip: event.spellLevel === 0 };
+        const message = { id: `${event.id}:${token.id}`, item, flags: { dnd5e: { origin: { castRank: event.spellLevel } } } };
+        const position = { center: token.getCenterPoint(), elevation: token.elevation, levelId: token.level };
+        this.submit(() => this.renderToken(message, token, position));
+      }
+    });
     if (this.kind === 'damage') this.listen('updateChatMessage', message => {
       if (message.flags?.[game.system.id]?.appliedDamage?.isReverted)
         this.submit(async () => { for (const scene of game.scenes) await this.erase(scene, message.id); });
@@ -140,6 +152,12 @@ class SpellVisualRunner {
 
   handleMessage(message) {
     if (!this.enabled || !authorized()) return;
+    if (game.system.id === 'dnd5e') {
+      const cast = message.flags?.world?.spellArsenalCast;
+      if (!cast || this.kind === 'damage') return;
+      message = { id: message.id, item: dndMessageSpell(message), token: message.getAssociatedToken?.(), actor: message.getAssociatedActor?.(),
+        flags: { dnd5e: { origin: { castRank: cast.spellLevel, rollOptions: ['origin:action:slug:cast-a-spell'] }, context: { type: 'spell-cast' } } } };
+    }
     const spell = message.item;
     if (!(spell?.type === 'spell' || spell?.isOfType?.('spell')) || normalized(spell.name) !== normalized(this.settings.SPELL_NAME)) return;
     const flags = message.flags?.[game.system.id];
@@ -246,11 +264,11 @@ class SpellVisualRunner {
     if (cells.length > 120) throw new Error('Spell areas support up to 120 cells.');
     const ground = Math.max(canvas.level.elevation.base, Number.isFinite(region.elevation.bottom) ? region.elevation.bottom : canvas.level.elevation.base);
     const origin = region.flags?.[game.system.id]?.origin;
-    const spell = region.message?.item ?? (globalThis.fromUuidSync ? wizardRegionSpell(region) ?? (origin?.uuid ? globalThis.fromUuidSync(origin.uuid) : null) : null);
+    const spell = region.message?.item ?? dndRegionSpell(region) ?? (globalThis.fromUuidSync ? wizardRegionSpell(region) ?? (origin?.uuid ? globalThis.fromUuidSync(origin.uuid) : null) : null);
     const created = await this.createVisuals(region.parent, region.id, cells, (data, type) => {
       data.hidden = region.hidden;
       data.elevation = type === 'Region' ? { bottom: ground, top: ground, topInclusive: true } : ground;
-    }, this.lifetime(region), spellStageRank(spell, origin));
+    }, this.lifetime(region), spellStageRank(spell, game.system.id === 'dnd5e' ? { castRank: region.flags?.dnd5e?.spellLevel } : origin));
     if (!created) { this.finished.add(region.uuid); await this.restoreOverlay(region); return; }
     if (!region.parent.regions.has(region.id) || !this.enabled || !authorized()) { await this.erase(region.parent, region.id); return; }
     if (this.settings.REGION_HIGHLIGHT_ONLY_WHILE_EDITING && region.visibility !== CONST.REGION_VISIBILITY.LAYER) {
@@ -294,7 +312,8 @@ class SpellVisualRunner {
       await scene.createEmbeddedDocuments('Region', [{ name: this.settings.SPELL_NAME, shapes: [{ type: 'grid', offsets: cells }], levels: [level.id],
         color: game.user.color.toString(), elevation: { bottom: caster.elevation, top: caster.elevation, topInclusive: true },
         visibility: CONST.REGION_VISIBILITY.ALWAYS, highlightMode: 'coverage',
-        flags: { [game.system.id]: { messageId: message.id, origin: { ...message.item.getOriginData(), name: message.item.name } } } }]);
+        flags: { [game.system.id]: { messageId: message.id, origin: { ...message.item.getOriginData?.(), name: message.item.name },
+          ...(game.system.id === 'dnd5e' ? { item: message.item.uuid, spellLevel: message.flags?.dnd5e?.origin?.castRank } : {}) } } }]);
     } finally { this.cancelPicker = null; }
   }
 

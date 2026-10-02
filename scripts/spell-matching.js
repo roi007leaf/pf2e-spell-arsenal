@@ -2,7 +2,7 @@ const themes = {
   Grease: ['grease'], 'Debris (Stone)': ['scatter-scree'], Spiderweb: ['web'],
   Overgrowth: ['entangling-flora', 'gluttonous-growth', 'flourishing-flora'],
   Sand: ['scouring-sand', 'shifting-sand', 'glass-sand', 'control-sand'],
-  Smoke: ['mist', 'solid-fog', 'obscuring-mist'], 'Haze (Deathly)': ['darkness', 'ravenous-darkness', 'consuming-darkness', 'sanguine-mist'],
+  Smoke: ['mist', 'solid-fog', 'obscuring-mist', 'fog-cloud'], 'Haze (Deathly)': ['darkness', 'ravenous-darkness', 'consuming-darkness', 'sanguine-mist'],
   Lava: ['volcanic-eruption'], Rift: ['fiendish-rift'], Earthquake: ['earthquake'],
   'Holy Light': ['holy-light'], 'Unholy Light': ['grim-tendrils'],
   'Magic Light': ['light', 'everlight', 'revealing-light'], Runes: ['sigil', 'message-rune', 'temporary-glyph'],

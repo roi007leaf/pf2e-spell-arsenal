@@ -1,6 +1,7 @@
 import { MODULE_ID, DEFAULT_RULES, missingDefaults, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
 import { inferSpellRule, resolveSpellDrop, spellAreaInfo } from './spell-parser.js';
 import { openSpellDetails, resolveSpellDetails } from './spell-details.js';
+import { DND_DEFAULT_RULES } from './dnd5e.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
@@ -120,7 +121,7 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
         }
         if (action === 'defaults') {
           const existing = [...content.querySelectorAll('[data-mapping]')].map(row => ({ id: row.dataset.id, spell: row.querySelector('[name="spell"]').value }));
-          const defaults = missingDefaults(existing, validateRules(DEFAULT_RULES));
+          const defaults = missingDefaults(existing, validateRules(game.system.id === 'dnd5e' ? DND_DEFAULT_RULES : DEFAULT_RULES));
           await this.loadTemplateDetails(defaults);
           content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', defaults.map(r => this.row(r)).join('')); filter();
           content.querySelector('[data-drop-status]').textContent = `${defaults.length} missing defaults added. Existing mappings preserved. Save mappings to keep them.`;
