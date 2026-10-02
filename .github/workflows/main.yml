@@ -47,12 +47,15 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           REPOSITORY: ${{ github.repository }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
           version="${RELEASE_TAG#v}"
           test "$version" = "$(jq -r .version module.json)"
+          manifest="https://github.com/$REPOSITORY/releases/latest/download/module.json"
+          if [ "$PRERELEASE" = "true" ]; then manifest="https://github.com/$REPOSITORY/releases/download/$RELEASE_TAG/module.json"; fi
           jq --arg version "$version" \
             --arg url "https://github.com/$REPOSITORY" \
-            --arg manifest "https://github.com/$REPOSITORY/releases/latest/download/module.json" \
+            --arg manifest "$manifest" \
             --arg download "https://github.com/$REPOSITORY/releases/download/$RELEASE_TAG/module.zip" \
             '.version = $version | .url = $url | .manifest = $manifest | .download = $download' \
             module.json > release-manifest.json
