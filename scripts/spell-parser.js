@@ -1,4 +1,5 @@
 // Description markup is read as data; it is never executed.
+import { wizardTemplateDetails } from './wizard-template-details.js';
 const visuals = { fire: 'Fire', cold: 'Frost', acid: 'Acid', electricity: 'Lightning Field', sonic: 'Earthquake', force: 'Force Barrier', vitality: 'Holy Light', void: 'Unholy Light' };
 
 export function spellAreaInfo(item) {
@@ -25,8 +26,10 @@ export function spellAreaInfo(item) {
     ? `${Number(template.distance) > 0 ? template.distance : 'Variable'} × ${template.width ?? 1} ft line`
     : `${Number(template.distance) > 0 ? template.distance : 'Variable'} ft ${template.type}`);
   if (system.area) details.unshift(`${system.area.value} ft ${system.area.type}`);
-  return { hasTemplate: Boolean(system.area) || templates.length > 0, squares, templateDetails: [...new Set(details)],
-    summary: system.area ? `${system.area.value} ft ${system.area.type}` : templates.length ? `Description templates: ${templates.map(template => `${Number(template.distance) > 0 ? template.distance : 'variable'} ft ${template.type}`).join(' / ')}`
+  const wizard = wizardTemplateDetails(item);
+  details.push(...wizard);
+  return { hasTemplate: Boolean(system.area) || templates.length > 0 || wizard.length > 0, squares, templateDetails: [...new Set(details)],
+    summary: wizard.length ? wizard.join(' / ') : system.area ? `${system.area.value} ft ${system.area.type}` : templates.length ? `Description templates: ${templates.map(template => `${Number(template.distance) > 0 ? template.distance : 'variable'} ft ${template.type}`).join(' / ')}`
       : squares ? `${squares} contiguous cells from description` : 'No spell template' };
 }
 
