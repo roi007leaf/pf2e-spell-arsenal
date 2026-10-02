@@ -1,10 +1,14 @@
-# PF2e Spell Arsenal
+# Spell Arsenal
 
 Foundry v14 with PF2e, SF2e or D&D 5e 6.0.5+ and Tile Arsenal 1.1.0+.
 
 D&D 5e worlds use nine starter defaults instead of the PF2e catalog. Drop additional spells to read activity damage, every configured template, and structured durations. Native 5e Regions supply actual covered cells and cast level; cantrips stay at stage 1 and upcast spells use their cast level. Linked wand/scroll Cast activities resolve their spells. Damage visuals run after actual HP/temp-HP loss from a spell's damage application, including player applications forwarded to the active GM; unlinked/manual damage has no spell to match. Concentration changes and damage undo are not currently linked to cleanup; delete the source Region or use Pause & clear effects. Tested against installed 5e 6.0.5 data and hooks; a live 5e world smoke test remains necessary.
 
-Enable **PF2e Spell Arsenal**, then Settings → Configure Spell Arsenal.
+Enable **Spell Arsenal**, then Settings → Configure Spell Arsenal.
+
+## Upgrading from PF2e Spell Arsenal
+
+Module ID and folder are now `spell-arsenal`; repository is [roi007leaf/spell-arsenal](https://github.com/roi007leaf/spell-arsenal). Install and enable **Spell Arsenal**, replacing the old `pf2e-spell-arsenal` installation. Keep only the new module enabled. The active GM automatically migrates saved mappings, the automation toggle, and generated-effect ownership on first use. Existing settings under the new ID take precedence. Original legacy settings remain available if needed.
 
 89 default mappings, audited against all 1,994 spell entries in PF2e 8.5.1 and all 38 Tile Arsenal 1.1.1 presets. Caustic Blast, Fireball and Grim Tendrils follow their areas; Scatter Scree uses stone debris for one minute; Grease uses four touching cells for one minute. **Add missing defaults** adds new mappings while preserving existing overrides; save to apply.
 

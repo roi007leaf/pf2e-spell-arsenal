@@ -1,4 +1,4 @@
-export const MODULE_ID = 'pf2e-spell-arsenal';
+export const MODULE_ID = 'spell-arsenal';
 export function isInstant(rule) { return rule.instant ?? (rule.duration === 5); }
 export const DURATION_UNITS = { seconds: 1, rounds: 6, minutes: 60, hours: 3600 };
 export function displayDuration(rule) {

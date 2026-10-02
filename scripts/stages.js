@@ -3,7 +3,7 @@ const TYPES = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
 export function stageRecords(scene, effect, levelId, offset, now = Date.now()) {
   return TYPES.flatMap(type => [...scene.getEmbeddedCollection(type)].flatMap(doc => {
     const data = FLAGS.map(flag => doc.flags.world?.[flag]).find(data =>
-      data?.owner?.startsWith('pf2e-spell-arsenal:') && data.effect === effect && data.levelId === levelId && data.offset === offset && (!data.expiresAt || data.expiresAt > now));
+      data?.owner?.startsWith('spell-arsenal:') && data.effect === effect && data.levelId === levelId && data.offset === offset && (!data.expiresAt || data.expiresAt > now));
     return data ? [{ doc, type, data }] : [];
   }));
 }

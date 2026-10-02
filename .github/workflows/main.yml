@@ -1,4 +1,4 @@
-name: PF2e Spell Arsenal Release Pipeline
+name: Spell Arsenal Release Pipeline
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate module manifest
         run: |
-          jq -e '.id == "pf2e-spell-arsenal" and (.version | type == "string")' module.json
+          jq -e '.id == "spell-arsenal" and (.version | type == "string")' module.json
           test "$(jq -r .version module.json)" = "$(jq -r .version package.json)"
           jq -r '.esmodules[], .styles[]' module.json | while IFS= read -r file; do test -f "$file"; done
       - name: Prepare release manifest

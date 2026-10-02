@@ -36,7 +36,7 @@ test('area lifecycle uses template cells, preserves edits and recovers Wizard ar
     getCoverage: () => ({ covered: [{ i: 0, j: 0 }, { i: 0, j: 1 }] }) };
   scene.regions.set(region.id, region);
   const settings = { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 60 };
-  const state = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:area');
+  const state = await runSpellEffect('area', settings, 'spell-arsenal:area');
   try {
     assert.equal(env.docs.length, 2);
     assert.equal(state.timers.size, 0);
@@ -92,7 +92,7 @@ test('applied damage creates owned effects once; undo removes them', async () =>
 test('description template casts wait for native placement instead of opening a second picker', async () => {
   const env = environment();
   const settings = { ...runtimeSettings(DEFAULT_RULES[0]), INSTANT: false, DURATION_SECONDS: 0 };
-  const state = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:description');
+  const state = await runSpellEffect('area', settings, 'spell-arsenal:description');
   try {
     const message = { ...env.message, item: { ...env.message.item, system: { description: { value: '@Template[burst|distance:5]' } } },
       flags: { pf2e: { context: { type: 'spell-cast' }, origin: { rollOptions: ['origin:action:slug:cast-a-spell'] } } } };
@@ -195,14 +195,14 @@ test('5e native regions and applied damage share visual lifecycle and cast-level
     flags: { dnd5e: { item: spell.uuid, origin: 'Scene.test.Token.caster', spellLevel: 6 } }, getCoverage: () => ({ covered: [{ i: 0, j: 0 }, { i: 0, j: 1 }] }) };
   canvas.scene.regions = new Map(); canvas.scene.regions[Symbol.iterator] = canvas.scene.regions.values.bind(canvas.scene.regions);
   const settings = { ...runtimeSettings(DEFAULT_RULES[0]), SPELL_NAME: 'Fireball', EFFECT_NAME: 'Fire' };
-  const area = await runSpellEffect('area', settings, 'pf2e-spell-arsenal:dnd-area');
+  const area = await runSpellEffect('area', settings, 'spell-arsenal:dnd-area');
   try {
     canvas.scene.regions.set(region.id, region); env.emit('createRegion', region); await area.queue;
     assert.equal(env.docs.length, 2); assert.ok(env.docs.every(d => d.testStage === 2));
     canvas.scene.regions.delete(region.id); env.emit('deleteRegion', region); await area.queue;
     assert.equal(env.docs.length, 0);
   } finally { await area.stop(); }
-  const damage = await runSpellEffect('damage', settings, 'pf2e-spell-arsenal:dnd-damage');
+  const damage = await runSpellEffect('damage', settings, 'spell-arsenal:dnd-damage');
   const token = { id: 'target-token', parent: canvas.scene, level: 'level', elevation: 0, getCenterPoint: () => ({ x: 50, y: 50 }) };
   try {
     const actor = { id: 'target', isToken: true, token };
@@ -219,7 +219,7 @@ test('damage visuals use cast rank and repeated cantrips retain first stage', as
     name: 'Acid', configs: { first: { type: 'Tile', stage: 1 }, second: { type: 'Tile', stage: 2 } },
     toDocumentData: (offset, stage) => new Map([['Tile', [{ x: 0, y: 0, testStage: stage }]]])
   } } });
-  const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'pf2e-spell-arsenal:rank');
+  const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'spell-arsenal:rank');
   try {
     env.emit('createChatMessage', { ...env.message, item: { ...env.message.item, rank: 5 } });
     await state.queue; assert.equal(env.docs[0].testStage, 2);
@@ -236,7 +236,7 @@ test('queued repeat damage advances and replaces cell visuals; removal resets st
     name: 'Acid', configs: { first: { type: 'Tile', stage: 1 }, second: { type: 'Tile', stage: 2 } },
     toDocumentData: (offset, stage) => new Map([['Tile', [{ x: 0, y: 0, elevation: 0, testStage: stage }]]])
   } } });
-  const state = await runSpellEffect('damage', { ...runtimeSettings(DEFAULT_RULES[0]), STAGE_MODE: 'buildup' }, 'pf2e-spell-arsenal:repeat');
+  const state = await runSpellEffect('damage', { ...runtimeSettings(DEFAULT_RULES[0]), STAGE_MODE: 'buildup' }, 'spell-arsenal:repeat');
   try {
     for (const id of ['one', 'two', 'three']) env.emit('createChatMessage', { ...env.message, id });
     await state.queue;

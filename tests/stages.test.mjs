@@ -23,7 +23,7 @@ test('first cast, recast, cap, sparse presets and fixed override', () => {
   assert.equal(chooseStage([record(2)], 'third', [1, 2], 'fixed', 1), 1);
 });
 test('buildup isolated by effect, cell, scene and level; expiry resets', () => {
-  const doc = { flags: { world: { spellArsenalArea: { owner: 'pf2e-spell-arsenal:test', effect: 'acid', offset: '0:1', levelId: 'ground', stage: 2, expiresAt: 100 } } } };
+  const doc = { flags: { world: { spellArsenalArea: { owner: 'spell-arsenal:test', effect: 'acid', offset: '0:1', levelId: 'ground', stage: 2, expiresAt: 100 } } } };
   const scene = { getEmbeddedCollection: type => type === 'Tile' ? [doc] : [] };
   assert.equal(stageRecords(scene, 'acid', 'ground', '0:1', 99).length, 1);
   for (const args of [['fire', 'ground', '0:1', 99], ['acid', 'roof', '0:1', 99], ['acid', 'ground', '0:2', 99], ['acid', 'ground', '0:1', 100]]) assert.equal(stageRecords(scene, ...args).length, 0);

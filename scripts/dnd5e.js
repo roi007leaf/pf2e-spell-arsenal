@@ -29,7 +29,7 @@ export function annotateDndCast(activity, config) {
   config.data.flags.world.spellArsenalCast = { itemUuid: activity.item.uuid, name: activity.item.name, spellLevel: level };
 }
 export function annotateDndDamage(actor, amount, updates, options) {
-  if (game.system.id !== 'dnd5e' || !game.settings.get('pf2e-spell-arsenal', 'enabled')) return;
+  if (game.system.id !== 'dnd5e' || !game.settings.get('spell-arsenal', 'enabled')) return;
   const message = options.originatingMessage ?? options.origin;
   const spell = dndMessageSpell(message);
   if (!isDndSpell(spell)) return;
@@ -37,7 +37,7 @@ export function annotateDndDamage(actor, amount, updates, options) {
   const nextValue = updates['system.attributes.hp.value'] ?? updates.system?.attributes?.hp?.value ?? hp.value;
   const nextTemp = updates['system.attributes.hp.temp'] ?? updates.system?.attributes?.hp?.temp ?? hp.temp ?? 0;
   if (Number(hp.value) + Number(hp.temp ?? 0) <= Number(nextValue) + Number(nextTemp)) return;
-  if (!game.settings.get('pf2e-spell-arsenal', 'rules').some(r => r.enabled && r.kind === 'damage' && r.spell.trim().toLowerCase() === spell.name.trim().toLowerCase())) return;
+  if (!game.settings.get('spell-arsenal', 'rules').some(r => r.enabled && r.kind === 'damage' && r.spell.trim().toLowerCase() === spell.name.trim().toLowerCase())) return;
   updates['flags.world.spellArsenalDamageEvent'] = { id: foundry.utils.randomID(), itemUuid: spell.uuid, name: spell.name, spellLevel: spell.system.level, actorId: actor.id };
 }
 export function forwardDndDamage(actor, changes, options) {
