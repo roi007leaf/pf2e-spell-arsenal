@@ -4,11 +4,11 @@ import { DEFAULT_RULES, validateRules, runtimeSettings, runtimeSignature } from 
 
 test('default mappings select expected triggers and durations', () => {
   const rules = validateRules(DEFAULT_RULES);
-  assert.equal(rules.length, 5);
+  assert.equal(rules.length, 89);
   assert.equal(runtimeSettings(rules.find(r => r.id === 'grease')).FREEFORM_SQUARES, 4);
   assert.equal(rules.find(r => r.id === 'fireball').duration, 0);
   assert.equal(rules.find(r => r.id === 'fireball').instant, true);
-  assert.equal(rules.find(r => r.id === 'caustic-blast').kind, 'damage');
+  assert.equal(rules.find(r => r.id === 'caustic-blast').kind, 'area');
 });
 test('prevents duplicate triggers but permits distinct trigger types', () => {
   const first = { ...DEFAULT_RULES[0] };
@@ -16,7 +16,7 @@ test('prevents duplicate triggers but permits distinct trigger types', () => {
   assert.equal(validateRules([first, { ...first, id: 'second', kind: 'caster' }]).length, 2);
 });
 test('persistent duration only valid for areas; bounds protect timers and scene size', () => {
-  assert.throws(() => validateRules([{ ...DEFAULT_RULES[0], duration: 0 }]), /Duration/);
+  assert.throws(() => validateRules([{ ...DEFAULT_RULES[0], kind: 'damage', instant: false, duration: 0 }]), /Duration/);
   assert.throws(() => validateRules([{ ...DEFAULT_RULES[1], squares: 121 }]), /120/);
   assert.throws(() => validateRules([{ ...DEFAULT_RULES[1], duration: 2147484 }]), /Duration/);
 });

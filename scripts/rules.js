@@ -8,16 +8,21 @@ export function displayDuration(rule) {
 export function hasTemplate(rule) {
   return rule.hasTemplate ?? ['fireball', 'scatter scree', 'grim tendrils', 'breathe fire'].includes(rule.spell?.trim().toLowerCase());
 }
-export const DEFAULT_RULES = [
-  { id: 'caustic-blast', enabled: true, kind: 'damage', spell: 'Caustic Blast', effect: 'Acid', duration: 5, stage: 1, squares: 4, highlight: false },
-  { id: 'scatter-scree', enabled: true, kind: 'area', spell: 'Scatter Scree', effect: 'Earthquake', duration: 0, stage: 1, squares: 4, highlight: true },
-  { id: 'fireball', enabled: true, kind: 'area', spell: 'Fireball', effect: 'Fire', duration: 5, stage: 1, squares: 4, highlight: false },
-  { id: 'grease', enabled: true, kind: 'area', spell: 'Grease', effect: 'Grease', duration: 60, durationUnit: 'minutes', instant: false, stage: 1, squares: 4, highlight: true },
-  { id: 'grim-tendrils', enabled: true, kind: 'caster', spell: 'Grim Tendrils', effect: 'Unholy Light', duration: 5, stage: 1, squares: 4, highlight: false }
-];
+export { DEFAULT_RULES } from './default-rules.js';
+
+export function missingDefaults(existing, defaults) {
+  const names = new Set(existing.map(rule => rule.spell.trim().toLowerCase()));
+  const ids = new Set(existing.map(rule => rule.id));
+  return defaults.filter(rule => !names.has(rule.spell.toLowerCase())).map(rule => {
+    let id = rule.id, suffix = 1;
+    while (ids.has(id)) id = `${rule.id.slice(0, 55)}-${suffix++}`;
+    ids.add(id);
+    return { ...rule, id };
+  });
+}
 
 export function validateRules(rules) {
-  if (!Array.isArray(rules) || rules.length > 100) throw new Error('Supply at most 100 spell mappings.');
+  if (!Array.isArray(rules) || rules.length > 2500) throw new Error('Supply at most 2500 spell mappings.');
   const ids = new Set(), triggers = new Set();
   return rules.map(rule => {
     if (!rule || typeof rule !== 'object') throw new Error('Invalid spell mapping.');

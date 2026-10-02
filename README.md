@@ -4,7 +4,9 @@ Foundry v14 with PF2e or SF2e and Tile Arsenal 1.1.0+.
 
 Enable **PF2e Spell Arsenal**, then Settings → Configure Spell Arsenal.
 
-Five default mappings: Caustic Blast → Acid on applied damage; Scatter Scree → Earthquake region; Fireball → Fire region for five seconds; Grease → four touching cells; Grim Tendrils → Unholy Light at caster.
+89 default mappings, audited against all 1,994 spell entries in PF2e 8.5.1 and all 38 Tile Arsenal 1.1.1 presets. Caustic Blast, Fireball and Grim Tendrils follow their areas; Scatter Scree uses stone debris for one minute; Grease uses four touching cells for one minute. **Add missing defaults** adds new mappings while preserving existing overrides; save to apply.
+
+Defaults use curated visual themes or a single supported elemental damage type. Mixed damage, sustained/variable durations, rituals, uncertain target placement, oversized areas and presets requiring walls remain excluded. The complete [spell audit](docs/spell-visual-audit.csv) records enabled, review and unmatched entries; the [preset audit](docs/preset-audit.json) lists textures, stages and document types. Unmatched means no suitable automatic visual, not an unsupported PF2e spell. Custom mappings remain available. Rebuild using `node tools/build-defaults.mjs <PF2e packs/pf2e/spells directory> <Tile Arsenal assets/configs.json>` against the stated versions. Copied visual Regions have their behaviors removed.
 
 Mappings persist as world settings. Automation starts on refresh in the active GM session. The editor supports adding/removing spells, per-rule switches, Tile Arsenal preset suggestions, stage, seconds, cell count and region highlight visibility. Area duration zero persists until region deleted. Casting a spell without a system area uses the touching-cell picker; Escape cancels placement.
 

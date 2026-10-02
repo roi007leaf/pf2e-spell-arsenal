@@ -22,7 +22,7 @@ test('existing mappings hydrate all native and description templates without rep
   const html = await new SpellArsenalConfig()._renderHTML();
   assert.match(html, /5 ft burst/); assert.match(html, /5 × 5 ft line/);
   assert.match(html, /value="3"/); assert.match(html, /value="2"/);
-  assert.equal(saved.duration, 120); assert.equal(saved.hasTemplate, undefined);
+  assert.equal(saved.duration, 120); assert.equal(saved.hasTemplate, false);
   assert.equal(validateRules([{ ...saved, templateDetails: ['5 ft burst', '5 × 5 ft line'] }])[0].templateDetails.length, 2);
 });
 

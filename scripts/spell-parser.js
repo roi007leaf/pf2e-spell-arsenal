@@ -1,5 +1,6 @@
 // Description markup is read as data; it is never executed.
 import { wizardTemplateDetails } from './wizard-template-details.js';
+import { matchSpellVisual } from './spell-matching.js';
 const visuals = { fire: 'Fire', cold: 'Frost', acid: 'Acid', electricity: 'Lightning Field', sonic: 'Earthquake', force: 'Force Barrier', vitality: 'Holy Light', void: 'Unholy Light' };
 
 export function spellAreaInfo(item) {
@@ -57,8 +58,8 @@ export function inferSpellRule(item, configurations, id) {
   });
   const types = [...new Set(damage.map(part => part.type).filter(Boolean))];
   const slug = system.slug || String(item.name).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const special = { grease: 'Grease', 'scatter-scree': 'Earthquake', 'grim-tendrils': 'Unholy Light' };
-  const candidates = special[slug] ? [special[slug]] : types.length ? types.map(type => visuals[type]).filter(Boolean) : [...traits].map(trait => visuals[trait]).filter(Boolean);
+  const visual = matchSpellVisual(item);
+  const candidates = visual.confidence !== 'review' ? [visual.effect] : types.length ? [] : [...traits].map(trait => visuals[trait]).filter(Boolean);
   const available = Object.values(configurations ?? {});
   const effects = [...new Set(candidates)].map(name => available.find(p => p.name?.toLowerCase() === name.toLowerCase())).filter(Boolean);
   const preset = effects.length === 1 ? effects[0] : null;
@@ -69,7 +70,7 @@ export function inferSpellRule(item, configurations, id) {
   const lasting = seconds > 0 || system.duration?.sustained || /sustained|unlimited|until|permanent/i.test(durationText);
   const stages = preset ? Object.values(preset.configs ?? {}).filter(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type)).map(p => p.stage) : [];
   const stage = stages.length ? Math.min(...stages) : 1;
-  const supported = preset && Object.values(preset.configs ?? {}).filter(p => p.stage === stage).every(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type));
+  const supported = preset && stages.length && Object.values(preset.configs ?? {}).every(p => (kind === 'area' ? ['Tile', 'AmbientLight', 'AmbientSound', 'Region'] : ['Tile', 'AmbientLight', 'AmbientSound']).includes(p.type));
   const rule = { id, spell: item.name, sourceUuid: item.parentItem?.uuid ?? item.uuid ?? '', kind, hasTemplate: area.hasTemplate, templateDetails: area.templateDetails, effect: preset?.name ?? '', enabled: Boolean(supported), stage,
     instant: !lasting,
     duration: lasting ? (seconds > 0 && seconds <= 2147483 ? seconds : kind === 'area' ? 0 : 5) : 0,

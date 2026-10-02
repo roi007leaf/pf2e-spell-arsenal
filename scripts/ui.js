@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_RULES, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
+import { MODULE_ID, DEFAULT_RULES, missingDefaults, validateRules, isInstant, hasTemplate, displayDuration, DURATION_UNITS } from './rules.js';
 import { inferSpellRule, resolveSpellDrop, spellAreaInfo } from './spell-parser.js';
 import { openSpellDetails, resolveSpellDetails } from './spell-details.js';
 
@@ -40,7 +40,7 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
       <datalist id="spell-arsenal-presets">${presets.map(p => `<option value="${escape(p)}"></option>`).join('')}</datalist>
       <div class="mapping-list" data-mappings>${rules.map(r => this.row(r)).join('')}</div>
       <details class="mapping-help"><summary>How visuals work</summary><p>Area follows the placed spell region, using its actual covered cells (up to 120). Damage appears on the damaged token; Cast appears on the caster. Instant playback clears after five seconds. Lasting duration 0 follows the source region. Auto buildup advances with repeated casts in the same cell.</p></details>
-      <footer><button type="button" data-action="add">+ Add mapping</button><button type="button" data-action="defaults">Load defaults</button><button type="button" data-action="cleanup">Pause & clear effects</button><button class="primary" type="button" data-action="save">Save mappings</button></footer>`;
+      <footer><button type="button" data-action="add">+ Add mapping</button><button type="button" data-action="defaults">Add missing defaults</button><button type="button" data-action="cleanup">Pause & clear effects</button><button class="primary" type="button" data-action="save">Save mappings</button></footer>`;
   }
 
   row(rule) {
@@ -114,14 +114,16 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
         if (action === 'add') {
           content.querySelector('[name="search"]').value = '';
           filter();
-          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', enabled: true }));
+          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', this.row({ ...DEFAULT_RULES[0], id: foundry.utils.randomID(), spell: '', effect: '', sourceUuid: '', hasTemplate: false, templateDetails: [], enabled: true }));
           const input = content.querySelector('[data-mappings]').lastElementChild.querySelector('[name="spell"]');
           input.focus(); input.scrollIntoView({ block: 'nearest' });
         }
         if (action === 'defaults') {
-          const defaults = validateRules(DEFAULT_RULES);
+          const existing = [...content.querySelectorAll('[data-mapping]')].map(row => ({ id: row.dataset.id, spell: row.querySelector('[name="spell"]').value }));
+          const defaults = missingDefaults(existing, validateRules(DEFAULT_RULES));
           await this.loadTemplateDetails(defaults);
-          content.querySelector('[data-mappings]').innerHTML = defaults.map(r => this.row(r)).join(''); filter();
+          content.querySelector('[data-mappings]').insertAdjacentHTML('beforeend', defaults.map(r => this.row(r)).join('')); filter();
+          content.querySelector('[data-drop-status]').textContent = `${defaults.length} missing defaults added. Existing mappings preserved. Save mappings to keep them.`;
         }
         if (action === 'save') {
           const rules = validateRules([...content.querySelectorAll('[data-mapping]')].map(row => {

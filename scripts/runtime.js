@@ -180,6 +180,7 @@ class SpellVisualRunner {
         for (const row of rows) {
           const data = foundry.utils.expandObject(foundry.utils.deepClone(row));
           delete data._id;
+          if (type === 'Region') data.behaviors = [];
           if (data.flags) delete data.flags['tile-arsenal'];
           data.flags ??= {};
           data.flags.world ??= {};

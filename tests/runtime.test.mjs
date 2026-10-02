@@ -52,6 +52,25 @@ test('area lifecycle uses template cells, preserves edits and recovers Wizard ar
   } finally { await state.stop(); }
 });
 
+test('preset regions never copy gameplay behaviors', async () => {
+  const env = environment();
+  const preset = { name: 'Acid', configs: { region: { stage: 1, type: 'Region' } },
+    toDocumentData: () => new Map([['Region', [{ shapes: [], behaviors: [{ type: 'executeScript', system: { source: 'throw Error()' } }] }]]]) };
+  tileArsenal.utils.getConfigurations = async () => ({ configurations: { acid: preset } });
+  const region = { id: 'visual-source', uuid: 'Scene.test.Region.visual-source', elevation: { bottom: 0 }, parent: canvas.scene, levels: new Set(['level']), flags: { pf2e: { origin: { name: 'Caustic Blast', type: 'spell' } } }, getCoverage: () => ({ covered: [{ i: 0, j: 0 }] }) };
+  canvas.scene.regions = new Map();
+  canvas.scene.regions[Symbol.iterator] = canvas.scene.regions.values.bind(canvas.scene.regions);
+  const state = await runSpellEffect('area', runtimeSettings(DEFAULT_RULES[0]), 'visual-only');
+  try {
+    canvas.scene.regions.set(region.id, region);
+    env.emit('createRegion', region);
+    await state.queue;
+    assert.equal(env.docs.length, 1);
+    assert.deepEqual(env.docs[0].behaviors, []);
+    assert.equal(env.docs[0].flags.world.spellArsenalArea.regionId, region.id);
+  } finally { await state.stop(); }
+});
+
 test('applied damage creates owned effects once; undo removes them', async () => {
   const env = environment();
   const state = await runSpellEffect('damage', runtimeSettings(DEFAULT_RULES[0]), 'test-damage');
