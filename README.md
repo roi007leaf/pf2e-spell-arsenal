@@ -25,7 +25,7 @@ Spell Arsenal handles visuals. Your game system handles saves, damage, condition
 
 ## Install
 
-In Foundryâ€™s **Add-on Modules â†’ Install Module**, paste this manifest URL:
+In Foundry's **Add-on Modules â†’ Install Module**, paste this manifest URL:
 
 ```text
 https://github.com/roi007leaf/spell-arsenal/releases/download/0.1.2/module.json
