@@ -20,6 +20,15 @@ test('unlinked mapping resolves configured world spell before unconfigured compe
   assert.equal(await resolveSpellDetails('Grease', ''), spell);
 });
 
+test('spell lookup never invokes unrelated actorless consumable embedded getters', async () => {
+  let reads = 0, opened = false;
+  const oil = { type: 'consumable', name: 'Antipode Oil', system: {}, get embeddedSpell() { reads++; throw new Error('No owning actor found'); } };
+  const spell = { type: 'spell', name: 'Grease', sheet: { render: async () => { opened = true; } } };
+  globalThis.game = { items: [oil], actors: [{ items: [spell] }], packs: [] };
+  await openSpellDetails('Grease', '');
+  assert.equal(reads, 0); assert.equal(opened, true);
+});
+
 test('missing compendium document does not prevent fallback to another spell pack', async () => {
   let opened = false;
   const spell = { type: 'spell', name: 'Grease', sheet: { render: async () => { opened = true; } } };

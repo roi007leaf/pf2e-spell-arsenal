@@ -36,7 +36,10 @@ export function spellAreaInfo(item) {
 export function containedSpell(item) {
   if (item?.type === 'spell') return item;
   if (item?.type !== 'consumable') return null;
-  const spell = item.embeddedSpell ?? item.system?.spell;
+  const stored = item.system?.spell;
+  const supplied = Object.getOwnPropertyDescriptor(item, 'embeddedSpell')?.value;
+  if (!stored && !supplied) return null;
+  const spell = item.actor ? item.embeddedSpell ?? stored ?? supplied : stored ?? supplied;
   return spell?.type === 'spell' ? spell : null;
 }
 
