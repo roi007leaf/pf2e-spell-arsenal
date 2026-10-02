@@ -3,7 +3,6 @@
 Foundry v14 with PF2e or SF2e and Tile Arsenal 1.1.0+.
 
 Enable **PF2e Spell Arsenal**, then Settings → Configure Spell Arsenal.
-Disable the original Lunatic Dice macros and refresh before enabling this module: those independent listeners would duplicate visuals.
 
 Five default mappings: Caustic Blast → Acid on applied damage; Scatter Scree → Earthquake region; Fireball → Fire region for five seconds; Grease → four touching cells; Grim Tendrils → Unholy Light at caster.
 
@@ -15,14 +14,14 @@ Deleting a source region removes generated documents. Damage undo removes its vi
 
 Visuals only: no saves, damage, conditions, spell-slot spending or rules automation. Square and hex grids supported; gridless unsupported. Keep an active GM online for real-time cleanup. Refresh removes interrupted temporary effects rather than replaying old casts. Persistent areas recover when their scene is viewed.
 
-## Credits and provenance
+## Duration and buildup
 
 Spells without a duration are marked Instant, with no seconds field. Brief visual playback cleanup remains separate (currently five seconds); it does not represent a spell lifetime. Legacy five-second fallback mappings display as Instant. Uncheck Instant only to explicitly override a mapping as lasting.
 
 Stages default to Auto buildup, including existing mappings: first active effect in a cell uses the preset's first available stage; another cast of the same effect in that scene/level/cell advances to the next available stage, capped at maximum. Overlapping cells replace prior visuals; other cells stay unchanged. Expired/deleted visuals no longer count. Region edits and recovery preserve their current stage rather than counting as casts. Superseded cells do not replay from old source regions. Choose Fixed to set a stage manually. Native Tile Arsenal placements are independent of this module's buildup.
 
-Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8). The current runtime is a new module implementation using Foundry hooks and Tile Arsenal's preset API. Tile Arsenal artwork and sounds are loaded from the installed dependency and are not bundled.
+## Credits
 
-Earlier Git history contains the initial macro adaptation. That runtime has been replaced and its importer removed; normal use needs no build step or source archive.
+Inspired by [Lunatic Dice's video](https://www.youtube.com/watch?v=w0UHqiM_6U8). Tile Arsenal artwork and sounds are loaded from the installed dependency and are not bundled.
 
 Validation: `npm test`. The rewritten runtime has automated coverage for damage, undo, buildup, template cells, region edits, deletion and Wizard recovery. The rewritten runtime still needs a Foundry smoke test.
