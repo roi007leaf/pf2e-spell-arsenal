@@ -1,6 +1,7 @@
 import { stageRecords, chooseStage, spellStageRank, replaceOverlaps } from './stages.js';
 import { spellAreaInfo } from './spell-parser.js';
 import { systemAdapter } from './systems.js';
+import { regionCoverage } from './region-coverage.js';
 
 const documentTypes = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
 const ownershipFlags = { area: 'spellArsenalArea', damage: 'spellArsenalDamage', caster: 'spellArsenalCaster' };
@@ -240,11 +241,11 @@ class SpellVisualRunner {
     if (!this.visible(region)) { await this.erase(region.parent, region.id); return; }
     if (canvas.grid.isGridless) throw new Error('Spell visuals require a grid.');
     // Region creation can precede canvas coverage preparation.
-    let coverage = region.getCoverage(canvas.level);
+    let coverage = regionCoverage(region, canvas.level, canvas.grid);
     for (let attempt = 0; !coverage && attempt < 5; attempt++) {
       await new Promise(resolve => setTimeout(resolve, 50));
       if (!this.enabled || !authorized() || !region.parent.regions.has(region.id) || !this.visible(region) || this.adapter.placementPending(region)) return;
-      coverage = region.getCoverage(canvas.level);
+      coverage = regionCoverage(region, canvas.level, canvas.grid);
     }
     // Inapplicable or still preparing coverage can be retried by region updates/canvasReady.
     if (!coverage) return;
