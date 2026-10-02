@@ -2,7 +2,7 @@ import { MODULE_ID, DEFAULT_RULES, validateRules, runtimeSettings, runtimeSignat
 import { runSpellEffect } from './runtime.js';
 import { SpellArsenalConfig } from './ui.js';
 import { restoreWizardTextures, wizardRegionSpell, wizardPlacementPending } from './template-wizard.js';
-import { rememberAnimationRegion, suppressMappedAnimations } from './animation-integration.js';
+import { rememberAnimationRegion, preventMappedAnimation, suppressMappedAnimations } from './animation-integration.js';
 
 const states = new Map();
 let queue = Promise.resolve();
@@ -86,5 +86,6 @@ Hooks.on('updateUser', synchronize);
 Hooks.on('userConnected', synchronize);
 Hooks.on('createRegion', rememberAnimationRegion);
 Hooks.on('deleteRegion', rememberAnimationRegion);
+Hooks.on('preCreateSequencerEffect', preventMappedAnimation);
 Hooks.on('createSequencerEffect', () => { suppressMappedAnimations().catch(report); });
 Hooks.on('sequencerEffectManagerReady', () => { suppressMappedAnimations().catch(report); });

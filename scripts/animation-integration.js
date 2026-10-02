@@ -15,6 +15,9 @@ export function replacesAnimation(effect) {
   const name = region ? wizardRegionSpell(region)?.name ?? region.flags?.[game.system.id]?.origin?.name ?? region.message?.item?.name : sources.get(data.source) ?? data.name;
   return Boolean(name && game.settings.get(MODULE_ID, 'rules').some(rule => rule.enabled && rule.kind === 'area' && rule.effect && rule.spell.trim().toLowerCase() === name.trim().toLowerCase()));
 }
+export function preventMappedAnimation(data) {
+  return replacesAnimation({ data }) ? false : undefined;
+}
 export async function suppressMappedAnimations() {
   if (!game.user.isGM || game.users.activeGM?.id !== game.user.id) return;
   const manager = globalThis.Sequencer?.EffectManager;
