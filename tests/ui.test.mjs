@@ -25,3 +25,16 @@ test('existing mappings hydrate all native and description templates without rep
   assert.equal(saved.duration, 120); assert.equal(saved.hasTemplate, undefined);
   assert.equal(validateRules([{ ...saved, templateDetails: ['5 ft burst', '5 × 5 ft line'] }])[0].templateDetails.length, 2);
 });
+
+test('legacy Grease card reads actor-specific Wizard shapes when no source link exists', async () => {
+  const id = 'pf2e-aztecs-template-wizard';
+  const automation = { enabled: true, templateShape: { shapes: [{ type: 'square', size: 10 }] } };
+  const spell = { type: 'spell', name: 'Grease', uuid: 'Actor.actor.Item.grease', flags: { [id]: { automation } }, system: {}, getFlag: () => automation };
+  globalThis.game = { user: { isGM: true, id: 'gm' }, users: { activeGM: { id: 'gm' } }, actors: [{ items: [spell] }], packs: [],
+    modules: new Map([[id, { active: true, api: { readAutomation: item => item.getFlag(id, 'automation') } }], ['tile-arsenal', { active: true }]]),
+    settings: { get: (module, key) => key === 'rules' ? [DEFAULT_RULES[3]] : true } };
+  const html = await new SpellArsenalConfig()._renderHTML();
+  assert.match(html, /Wizard: 10 ft square/);
+  assert.doesNotMatch(html, /No spell template/);
+  assert.match(html, /Actor.actor.Item.grease/);
+});

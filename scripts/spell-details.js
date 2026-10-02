@@ -6,6 +6,13 @@ export async function resolveSpellDetails(name, sourceUuid) {
     try { spell = containedSpell(await fromUuid(sourceUuid)); } catch { /* Fall back when original item was removed. */ }
   }
   if (spell?.name?.trim().toLowerCase() !== name.trim().toLowerCase()) spell = null;
+  if (!spell || sourceUuid?.startsWith('Compendium.')) {
+    const actors = [...new Set([...(globalThis.canvas?.tokens?.controlled ?? []).map(token => token.actor).filter(Boolean), ...(game.actors ?? [])])];
+    const items = [...(game.items ?? []), ...actors.flatMap(actor => [...(actor.items ?? [])])];
+    const matches = items.map(containedSpell).filter(item => item?.name?.trim().toLowerCase() === name.trim().toLowerCase());
+    const configured = matches.find(item => item.flags?.['pf2e-aztecs-template-wizard']?.automation?.enabled);
+    spell = configured ?? spell ?? matches[0];
+  }
   if (!spell) {
     const packs = [...game.packs].filter(pack => pack.documentName === 'Item' && /spells/i.test(pack.collection));
     for (const pack of packs) {

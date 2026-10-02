@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openSpellDetails } from '../scripts/spell-details.js';
+import { resolveSpellDetails } from '../scripts/spell-details.js';
 test('source spell sheet opens; removed source falls back to compendium', async () => {
   let opened = 0;
   const spell = { type: 'spell', name: 'Grease', sheet: { render: async force => { assert.equal(force, true); opened++; } } };
@@ -11,6 +12,12 @@ test('source spell sheet opens; removed source falls back to compendium', async 
   game.packs = [{ documentName: 'Item', collection: 'pf2e.spells-srd', getIndex: async () => [{ type: 'spell', name: 'Grease', _id: 's' }], getDocument: async () => spell }];
   await openSpellDetails('Grease', 'deleted'); assert.equal(opened, 2);
   await assert.rejects(openSpellDetails('Unknown', ''), /unavailable/);
+});
+
+test('unlinked mapping resolves configured world spell before unconfigured compendium copy', async () => {
+  const spell = { type: 'spell', name: 'Grease', uuid: 'Actor.a.Item.grease', system: {}, flags: { 'pf2e-aztecs-template-wizard': { automation: { enabled: true } } } };
+  globalThis.game = { actors: [{ items: [spell] }], items: [], packs: [] };
+  assert.equal(await resolveSpellDetails('Grease', ''), spell);
 });
 
 test('missing compendium document does not prevent fallback to another spell pack', async () => {

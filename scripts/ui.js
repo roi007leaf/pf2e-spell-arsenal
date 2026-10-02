@@ -23,12 +23,12 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
     await Promise.all(rules.map(async rule => {
       try {
         const spell = await resolveSpellDetails(rule.spell, rule.sourceUuid);
-        if (!spell) return;
+        if (!spell) { rule.templateDetailsUnavailable = true; return; }
         const area = spellAreaInfo(spell);
         rule.hasTemplate = area.hasTemplate;
         rule.templateDetails = area.templateDetails;
         rule.sourceUuid = spell.parentItem?.uuid ?? spell.uuid ?? rule.sourceUuid;
-      } catch (error) { console.warn('Spell Arsenal: template details unavailable', error); }
+      } catch (error) { rule.templateDetailsUnavailable = true; console.warn('Spell Arsenal: template details unavailable', error); }
     }));
   }
 
@@ -46,7 +46,8 @@ export class SpellArsenalConfig extends foundry.applications.api.ApplicationV2 {
   row(rule) {
     const duration = displayDuration(rule);
     const picker = rule.kind === 'area' && !hasTemplate(rule);
-    const templates = rule.templateDetails ?? [];
+    const templates = [...(rule.templateDetails ?? [])];
+    if (rule.templateDetailsUnavailable && !templates.length) templates.push('Details unavailable — drop the configured spell to link');
     return `<article class="mapping-card ${rule.enabled ? '' : 'is-disabled'}" data-mapping data-id="${escape(rule.id)}" data-source-uuid="${escape(rule.sourceUuid ?? '')}" data-has-template="${hasTemplate(rule)}" data-template-details="${escape(JSON.stringify(templates))}">
       <div class="mapping-heading"><input type="checkbox" name="enabled" ${rule.enabled ? 'checked' : ''} aria-label="Enable mapping"><div class="spell-name-control"><input name="spell" value="${escape(rule.spell)}" placeholder="Spell name" aria-label="Spell name"><button type="button" data-action="details" title="Open spell details" aria-label="Open spell details"><i class="fas fa-book-open" aria-hidden="true"></i></button></div><button class="remove-mapping" type="button" data-action="remove" aria-label="Remove mapping" title="Remove mapping">×</button></div>
       <div class="mapping-fields">
