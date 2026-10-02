@@ -25,7 +25,7 @@ Spell Arsenal handles visuals. Your game system handles saves, damage, condition
 
 ## Install
 
-In Foundry's **Add-on Modules â†’ Install Module**, paste this manifest URL:
+In Foundry's **Add-on Modules’ Install Module**, paste this manifest URL:
 
 ```text
 https://github.com/roi007leaf/spell-arsenal/releases/download/0.1.2/module.json
@@ -35,12 +35,12 @@ Enable **Spell Arsenal** and **Tile Arsenal** in your world. This is an early pr
 
 ## Quick start
 
-1. Open **Settings â†’ Configure Spell Arsenal** as GM.
+1. Open **Settings’ Configure Spell Arsenal** as GM.
 2. Use the defaults, or drag in a spell to add a mapping.
 3. Review the suggested effect, trigger, and duration, then click **Save mappings**.
 4. Cast the spell and place its area or apply its damage as usual.
 
-Use **Add missing defaults** to add catalog mappings while keeping your customizations. D&D defaults follow your worldâ€™s 2014 or 2024 Rules Version setting. Not every spell has a suitable automatic visual; you can configure additional spells yourself.
+Use **Add missing defaults** to add catalog mappings while keeping your customizations. D&D defaults follow your world's 2014 or 2024 Rules Version setting. Not every spell has a suitable automatic visual; you can configure additional spells yourself.
 
 ## Customize your visuals
 
