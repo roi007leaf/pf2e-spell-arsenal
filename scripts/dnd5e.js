@@ -98,6 +98,11 @@ export const dnd5eAdapter = {
   areaEnemy: (_spell, caster, token) => Boolean(caster && [-1, 1].includes(caster.disposition) && token.disposition === -caster.disposition),
   handlesAreaAutomation: () => false,
   handlesAreaSaves: () => false,
+  areaShowDC(spell) {
+    if (game.user?.isGM) return true;
+    const visibility = game.settings?.get('dnd5e', 'challengeVisibility');
+    return visibility === 'all' || (visibility === 'player' && Boolean(spell.actor?.hasPlayerOwner));
+  },
   areaDamageSpell: message => message.type === 'damage' ? dndMessageSpell(message) : null,
   areaCastActions(spell, region) {
     const all = activities(spell);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 — 2026-10-03
+
+- Respect PF2e metagame DC visibility and caster ownership in area roll prompts.
+- Respect D&D 5e Challenge Visibility when displaying DCs in area roll prompts.
+- Keep hidden DCs out of player prompt labels while retaining the actual DC for native save rolls.
+
 ## 0.1.4 — 2026-10-03
 
 - Fix garbled separators in save button labels, roll prompt titles, and picker-cell validation text.

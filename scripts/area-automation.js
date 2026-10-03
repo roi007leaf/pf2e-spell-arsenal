@@ -31,7 +31,8 @@ export function showAreaPrompt(spell, token, event, { valid = () => true, savesO
     if (!valid()) return 'cancelled';
     const actions = systemAdapter(spell).areaActions(spell, token, event).filter(action => (!savesOnly || action.id.startsWith('save')) && (!damageOnly || action.id.startsWith('damage')));
     if ((savesOnly || damageOnly) && !actions.length) return 'skip';
-    const buttons = actions.map(action => ({ action: action.id, label: promptLabel(action.label), icon: action.id.startsWith('save') ? 'fa-solid fa-shield-halved' : 'fa-solid fa-dice', callback: async () => {
+    const showDC = systemAdapter(spell).areaShowDC(spell);
+    const buttons = actions.map(action => ({ action: action.id, label: promptLabel(showDC ? action.label : action.label.replace(/\s*\(DC \d+\)/g, '')), icon: action.id.startsWith('save') ? 'fa-solid fa-shield-halved' : 'fa-solid fa-dice', callback: async () => {
       if (!valid()) return 'cancelled';
       const result = await action.run();
       return result ? action.id : 'cancelled';

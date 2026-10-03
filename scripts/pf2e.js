@@ -63,12 +63,13 @@ export const pf2eAdapter = {
   },
   handlesAreaAutomation: wizardHandlesAreaAutomation,
   handlesAreaSaves: () => Boolean(game.modules.get('pf2e-toolbelt')?.active),
+  areaShowDC: spell => Boolean(game.user?.isGM || game.pf2e?.settings?.metagame?.dcs || spell.actor?.hasPlayerOwner || spell.actor?.isOwner),
   areaDamageSpell: message => message.flags?.[game.system.id]?.context?.type === 'damage-roll' ? message.item : null,
   areaActions(spell, token) {
     const save = spell.system?.defense?.save?.statistic;
     const dc = spell.statistic?.dc?.value ?? spell.spellcasting?.statistic?.dc?.value;
     const actions = [];
-    if (save && Number.isFinite(dc) && token.actor.saves?.[save]?.roll) actions.push({ id: 'save', label: `Roll ${save} save (DC ${dc})`, run: () => token.actor.saves[save].roll({ dc: { value: dc }, item: spell }) });
+    if (save && Number.isFinite(dc) && token.actor.saves?.[save]?.roll) actions.push({ id: 'save', label: `Roll ${save} save (DC ${dc})`, run: () => token.actor.saves[save].roll({ dc: { value: dc, visible: this.areaShowDC(spell) }, item: spell }) });
     if (spell.damageKinds?.has('damage') && spell.rollDamage) actions.push({ id: 'damage', label: 'Roll spell damage', run: () => spell.rollDamage(new Event('click')) });
     return actions;
   },

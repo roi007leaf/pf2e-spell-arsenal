@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { showAreaPrompt, requestAreaSave } from '../scripts/area-automation.js';
 
 test('PF2e dialog rolls affected token save with caster DC through native API', async () => {
+  globalThis.game = { user: { isGM: true } };
   const rolls = [];
   const spell = { name: 'Fireball', type: 'spell', system: { level: { value: 4 }, defense: { save: { statistic: 'reflex' } } }, statistic: { dc: { value: 26 } }, damageKinds: new Set(['damage']), rollDamage: async () => rolls.push('damage') };
   const token = { name: 'Target', actor: { saves: { reflex: { roll: async options => rolls.push(options) } } } };
