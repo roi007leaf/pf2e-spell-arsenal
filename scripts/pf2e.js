@@ -1,6 +1,6 @@
 import { wizardTemplateDetails } from './wizard-template-details.js';
 import { DEFAULT_RULES } from './default-rules.js';
-import { restoreWizardTextures, wizardRegionSpell, wizardHandlesPlacement, wizardPlacementPending, wizardFlagsChanged, WIZARD_ID } from './template-wizard.js';
+import { restoreWizardTextures, wizardRegionSpell, wizardHandlesPlacement, wizardHandlesAreaAutomation, wizardPlacementPending, wizardFlagsChanged, WIZARD_ID } from './template-wizard.js';
 export function pf2eAreaInfo(item) {
   const system = item?.system ?? {};
   const description = String(system.description?.value ?? '');
@@ -54,6 +54,31 @@ export const pf2eAdapter = {
   },
   regionName(region) { return region.flags?.[globalThis.game?.system?.id ?? 'pf2e']?.origin?.name ?? this.regionSpell(region)?.name; },
   regionOrigin: region => region.flags?.[game.system.id]?.origin,
+  areaCastActions(spell) {
+    if (spell.isAttack && spell.rollAttack) return [{ id: 'attack', run: () => spell.rollAttack(new Event('click')) }];
+    return spell.damageKinds?.has('damage') && spell.rollDamage ? [{ id: 'damage', run: () => spell.rollDamage(new Event('click')) }] : [];
+  },
+  areaEnemy(spell, caster, token) {
+    return spell.actor?.isEnemyOf ? spell.actor.isEnemyOf(token.actor) : Boolean(caster && [-1, 1].includes(caster.disposition) && token.disposition === -caster.disposition);
+  },
+  handlesAreaAutomation: wizardHandlesAreaAutomation,
+  handlesAreaSaves: () => Boolean(game.modules.get('pf2e-toolbelt')?.active),
+  areaDamageSpell: message => message.flags?.[game.system.id]?.context?.type === 'damage-roll' ? message.item : null,
+  areaActions(spell, token) {
+    const save = spell.system?.defense?.save?.statistic;
+    const dc = spell.statistic?.dc?.value ?? spell.spellcasting?.statistic?.dc?.value;
+    const actions = [];
+    if (save && Number.isFinite(dc) && token.actor.saves?.[save]?.roll) actions.push({ id: 'save', label: `Roll ${save} save (DC ${dc})`, run: () => token.actor.saves[save].roll({ dc: { value: dc }, item: spell }) });
+    if (spell.damageKinds?.has('damage') && spell.rollDamage) actions.push({ id: 'damage', label: 'Roll spell damage', run: () => spell.rollDamage(new Event('click')) });
+    return actions;
+  },
+  regionCastSpell(region) {
+    const spell = this.regionSpell(region);
+    const origin = this.regionOrigin(region) ?? region.message?.flags?.[game.system.id]?.origin;
+    const optionRank = origin?.rollOptions?.find(value => /^origin:item:rank:\d+$/.test(value))?.split(':').at(-1);
+    const rank = Number(origin?.castRank ?? optionRank);
+    return spell && Number.isInteger(rank) && rank > 0 ? spell.loadVariant?.({ castRank: rank }) ?? spell : spell;
+  },
   messageOrigin: message => message.flags?.[game.system.id]?.origin,
   reverted: message => Boolean(message.flags?.[game.system.id]?.appliedDamage?.isReverted),
   messageEvent(message, kind) {

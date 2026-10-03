@@ -1,8 +1,13 @@
+import { registerAreaAutomation } from './area-automation.js';
 import { MODULE_ID, validateRules, runtimeSettings, runtimeSignature } from './rules.js';
 import { runSpellEffect } from './runtime.js';
 import { SpellArsenalConfig } from './ui.js';
 import { rememberAnimationRegion, preventMappedAnimation, suppressMappedAnimations } from './animation-integration.js';
 import { systemAdapter } from './systems.js';
+import { registerTriggerIntegration, triggerIntegrationEnabled } from './trigger-integration.js';
+
+registerTriggerIntegration();
+registerAreaAutomation();
 
 const states = new Map();
 let queue = Promise.resolve();
@@ -17,8 +22,9 @@ export function synchronize() {
     const enabled = game.settings.get(MODULE_ID, 'enabled');
     const rules = validateRules(game.settings.get(MODULE_ID, 'rules'));
     const wanted = new Map(authority && enabled ? rules.filter(r => r.enabled).map(r => [r.id, r]) : []);
+    const signature = rule => `${runtimeSignature(rule)}:${triggerIntegrationEnabled()}`;
     for (const [id, state] of states) {
-      if (wanted.has(id) && state.ruleSignature === runtimeSignature(wanted.get(id))) continue;
+      if (wanted.has(id) && state.ruleSignature === signature(wanted.get(id))) continue;
       await state.stop(authority);
       states.delete(id);
     }
@@ -27,7 +33,7 @@ export function synchronize() {
       if (states.has(id)) continue;
       try {
         const state = await runSpellEffect(rule.kind, runtimeSettings(rule), `${MODULE_ID}:${id}`);
-        if (state) { state.ruleSignature = runtimeSignature(rule); states.set(id, state); }
+        if (state) { state.ruleSignature = signature(rule); states.set(id, state); }
       } catch (error) { report(error); }
     }
   }).catch(report);
@@ -59,6 +65,7 @@ async function clearEffects() {
 }
 
 Hooks.once('init', () => {
+  game.settings.register(MODULE_ID, 'triggerAnimations', { name: 'Use Trigger Animations', hint: 'Manage Tile Arsenal spell entries and priorities in Trigger Animations. Enable its Spell Arsenal entries, then refresh after adding new spell mappings.', scope: 'world', config: true, type: Boolean, default: false, requiresReload: true });
   game.settings.register(MODULE_ID, 'enabled', { name: 'Enable spell visuals', hint: 'Automatically run mappings in the active GM session.', scope: 'world', config: true, type: Boolean, default: true, onChange: synchronize });
   game.settings.register(MODULE_ID, 'rules', { scope: 'world', config: false, type: Array, default: systemAdapter().defaults(), onChange: synchronize });
   game.settings.registerMenu(MODULE_ID, 'configure', { name: 'Spell mappings', label: 'Configure Spell Arsenal', hint: 'Add spells, choose Tile Arsenal effects, manage durations and triggers.', icon: 'fas fa-wand-magic-sparkles', type: SpellArsenalConfig, restricted: true });
@@ -83,6 +90,7 @@ Hooks.once('ready', async () => {
   await synchronize();
 });
 Hooks.on('updateUser', synchronize);
+Hooks.on('triggerAnimations.ready', synchronize);
 Hooks.on('userConnected', synchronize);
 Hooks.on('createRegion', rememberAnimationRegion);
 Hooks.on('deleteRegion', rememberAnimationRegion);

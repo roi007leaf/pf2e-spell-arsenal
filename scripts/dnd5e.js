@@ -1,5 +1,14 @@
 export const isDndSpell = item => item?.type === 'spell' && typeof item.system?.level === 'number';
 export const activities = item => item?.system?.activities?.values ? [...item.system.activities.values()] : Object.values(item?.system?.activities ?? {});
+export function areaActivities(item, event) {
+  const all = activities(item);
+  if (!event || all.length < 2) return all;
+  const followUp = activity => /\b(enter|entry|re[ -]?enter|exit|leave|start\s+(?:of\s+)?turn|end\s+(?:of\s+)?turn)\b/i.test(activity.name ?? '');
+  if (!all.some(followUp)) return all;
+  if (event === 'placement') return all.filter(activity => !followUp(activity));
+  const pattern = event === 'entry' ? /\b(enter|entry|re[ -]?enter)\b/i : event === 'turn-end' ? /\bend\s+(?:of\s+)?turn\b/i : event === 'exit' ? /\b(exit|leave)\b/i : /\bstart\s+(?:of\s+)?turn\b/i;
+  return all.filter(activity => pattern.test(activity.name ?? ''));
+}
 export function dndSpellData(item) {
   const system = item.system;
   const damage = activities(item).filter(a => a.type !== 'heal').flatMap(a => [...(a.damage?.parts ?? []), ...(a.damage?.includeBase && system.damage?.base ? [system.damage.base] : [])]);
@@ -86,6 +95,42 @@ export const dnd5eAdapter = {
   regionSpell: dndRegionSpell,
   regionName(region) { return this.regionSpell(region)?.name ?? region.flags?.dnd5e?.origin?.name ?? region.message?.item?.name; },
   regionOrigin: region => ({ castRank: region.flags?.dnd5e?.spellLevel }),
+  areaEnemy: (_spell, caster, token) => Boolean(caster && [-1, 1].includes(caster.disposition) && token.disposition === -caster.disposition),
+  handlesAreaAutomation: () => false,
+  handlesAreaSaves: () => false,
+  areaDamageSpell: message => message.type === 'damage' ? dndMessageSpell(message) : null,
+  areaCastActions(spell, region) {
+    const all = activities(spell);
+    const message = game.messages?.get(region.flags?.dnd5e?.messageId);
+    const id = region.flags?.dnd5e?.activityId ?? message?.system?.activityId;
+    const candidates = id ? all.filter(activity => activity.id === id) : all;
+    const attacks = candidates.filter(activity => activity.type === 'attack' && activity.rollAttack);
+    if (attacks.length === 1) return [{ id: 'attack', run: () => attacks[0].rollAttack() }];
+    if (attacks.length) return [];
+    const damage = candidates.filter(activity => activity.type !== 'heal' && activity.rollDamage && (activity.damage?.parts?.length || activity.damage?.includeBase));
+    return damage.length === 1 ? [{ id: 'damage', run: () => damage[0].rollDamage() }] : [];
+  },
+  areaActions(spell, token, event) {
+    const actions = [];
+    for (const activity of areaActivities(spell, event)) {
+      const abilities = [...(activity.save?.ability ?? [])];
+      const dc = activity.save?.dc?.value;
+      for (const ability of abilities) if (Number.isFinite(dc) && token.actor.rollSavingThrow) actions.push({ id: `save-${activity.id}-${ability}`, label: `${activity.name || spell.name}: ${ability} save (DC ${dc})`, run: () => token.actor.rollSavingThrow({ ability, dc, target: dc }) });
+      if (activity.type !== 'heal' && activity.rollDamage && (activity.damage?.parts?.length || activity.damage?.includeBase)) actions.push({ id: `damage-${activity.id}`, label: `${activity.name || spell.name}: roll damage`, run: () => activity.rollDamage() });
+    }
+    return actions;
+  },
+  regionCastSpell(region) {
+    const messageId = region.flags?.dnd5e?.messageId;
+    const message = messageId && game.messages?.get(messageId);
+    const fromMessage = message?.getAssociatedItem?.({ scaled: true });
+    if (fromMessage) return fromMessage;
+    const spell = this.regionSpell(region);
+    const level = region.flags?.dnd5e?.spellLevel;
+    const base = spell?._source?.system?.level ?? spell?.system?.level;
+    return spell && Number.isInteger(level) && Number.isInteger(base) && level >= base && base > 0
+      ? spell.scaledClone?.(level - base) ?? spell : spell;
+  },
   messageOrigin: message => message.flags?.dnd5e?.origin,
   reverted: () => false,
   messageEvent(message, kind) {

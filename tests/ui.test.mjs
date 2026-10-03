@@ -37,4 +37,17 @@ test('legacy Grease card reads actor-specific Wizard shapes when no source link 
   assert.match(html, /Wizard: 10 ft square/);
   assert.doesNotMatch(html, /No spell template/);
   assert.match(html, /Actor.actor.Item.grease/);
+  assert.doesNotMatch(html, /Template Wizard configured/);
+  assert.match(html, /name="areaTriggers"/);
+});
+
+test('Wizard-managed cards hide prompt controls while keeping saved preference', () => {
+  const config = new SpellArsenalConfig();
+  const html = config.row({ ...DEFAULT_RULES[3], wizardManaged: true, areaAutomation: 'turn-start' });
+  assert.match(html, /data-area-automation="turn-start"/);
+  assert.match(html, /Template Wizard configured/);
+  assert.doesNotMatch(html, /name="areaTriggers"/);
+  const ordinary = config.row({ ...DEFAULT_RULES[3], wizardManaged: false });
+  assert.match(ordinary, /name="areaTriggers"/);
+  assert.doesNotMatch(ordinary, /Template Wizard configured/);
 });

@@ -1,3 +1,4 @@
+import { AREA_TRIGGERS, areaTriggers, areaMode } from './area-triggers.js';
 export const MODULE_ID = 'spell-arsenal';
 export function isInstant(rule) { return rule.instant ?? (rule.duration === 5); }
 export const DURATION_UNITS = { seconds: 1, rounds: 6, minutes: 60, hours: 3600 };
@@ -32,6 +33,14 @@ export function validateRules(rules) {
     if (!spell || (rule.enabled && !effect) || !['area', 'damage', 'caster'].includes(rule.kind)) throw new Error('Each enabled mapping needs spell, effect and trigger.');
     if (typeof rule.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(rule.id) || ids.has(rule.id)) throw new Error('Mapping IDs must be unique.');
     ids.add(rule.id);
+    const areaAutomation = rule.areaAutomation ?? 'off';
+    if (!['off', 'placement-entry', 'turn-start'].includes(areaAutomation)) throw new Error('Invalid area automation.');
+    const areaEvents = areaTriggers(rule);
+    if (!Array.isArray(areaEvents) || areaEvents.some(trigger => !Object.hasOwn(AREA_TRIGGERS, trigger))) throw new Error('Invalid area triggers.');
+    const areaRepeat = rule.areaRepeat ?? 'affected-turn';
+    const triggerMode = areaMode(rule);
+    if (!['auto', 'manual'].includes(triggerMode)) throw new Error('Invalid area trigger mode.');
+    if (!['affected-turn', 'caster-turn', 'unrestricted'].includes(areaRepeat)) throw new Error('Invalid area repeat limit.');
     const stageMode = rule.stageMode ?? 'auto';
     if (!['auto', 'buildup', 'fixed'].includes(stageMode)) throw new Error('Stage mode must be auto, buildup or fixed.');
     if (typeof rule.enabled !== 'boolean' || typeof rule.highlight !== 'boolean') throw new Error('Invalid mapping toggle.');
@@ -44,8 +53,8 @@ export function validateRules(rules) {
     if (rule.enabled) triggers.add(trigger);
     if (!Number.isFinite(rule.duration) || rule.duration < 0 || rule.duration > 2147483 || (!isInstant(rule) && rule.kind !== 'area' && rule.duration === 0)) throw new Error('Duration must be positive; area effects may use 0 for permanent.');
     if (!Number.isInteger(rule.stage) || rule.stage < 1) throw new Error('Stage must be a positive integer.');
-    if (!Number.isInteger(rule.squares) || rule.squares < 1 || rule.squares > 120) throw new Error('Choose 1–120 touching cells.');
-    return { id: rule.id, enabled: rule.enabled, kind: rule.kind, spell, sourceUuid: typeof rule.sourceUuid === 'string' ? rule.sourceUuid : '', effect, hasTemplate: hasTemplate(rule), templateDetails, duration: isInstant(rule) ? 0 : rule.duration, durationUnit: displayDuration(rule).unit, instant: isInstant(rule), stage: rule.stage, stageMode, squares: rule.squares, highlight: rule.highlight };
+    if (!Number.isInteger(rule.squares) || rule.squares < 1 || rule.squares > 120) throw new Error('Choose 1â€“120 touching cells.');
+    return { areaMode: triggerMode, areaAutomation, areaTriggers: [...new Set(areaEvents)], areaRepeat, id: rule.id, enabled: rule.enabled, kind: rule.kind, spell, sourceUuid: typeof rule.sourceUuid === 'string' ? rule.sourceUuid : '', effect, hasTemplate: hasTemplate(rule), templateDetails, duration: isInstant(rule) ? 0 : rule.duration, durationUnit: displayDuration(rule).unit, instant: isInstant(rule), stage: rule.stage, stageMode, squares: rule.squares, highlight: rule.highlight };
   });
 }
 

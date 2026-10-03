@@ -6,6 +6,12 @@ export function wizardHandlesPlacement(item) {
   const automation = module.api.readAutomation(item);
   return Boolean(automation?.enabled && (automation.contiguous?.enabled || automation.templateShape?.shapes?.length));
 }
+export function wizardHandlesAreaAutomation(item) {
+  const module = game.modules.get(WIZARD_ID);
+  if (!module?.active || !item) return false;
+  const automation = module.api?.readAutomation?.(item);
+  return Boolean(automation?.enabled && automation.behaviors?.some(entry => entry.disabled !== true && ['savingThrow', 'dealDamage', 'rollDice'].includes(entry.type)));
+}
 export function wizardRegionSpell(region) {
   if (!game.modules.get(WIZARD_ID)?.active) return null;
   const uuid = region.flags?.[WIZARD_ID]?.originUuid ?? region.flags?.[WIZARD_ID]?.managed?.itemUuid ?? region.flags?.[WIZARD_ID]?.contiguousPlacement?.itemUuid ?? region.flags?.[game.system?.id ?? 'pf2e']?.origin?.uuid;

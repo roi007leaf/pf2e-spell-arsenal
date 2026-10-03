@@ -2,6 +2,7 @@ import { stageRecords, chooseStage, spellStageRank, replaceOverlaps } from './st
 import { spellAreaInfo } from './spell-parser.js';
 import { systemAdapter } from './systems.js';
 import { regionCoverage } from './region-coverage.js';
+import { dispatchTileVisual } from './trigger-integration.js';
 
 const documentTypes = ['Tile', 'AmbientLight', 'AmbientSound', 'Region'];
 const ownershipFlags = { area: 'spellArsenalArea', damage: 'spellArsenalDamage', caster: 'spellArsenalCaster' };
@@ -221,7 +222,8 @@ class SpellVisualRunner {
     }, Math.max(0, deadline - Date.now())));
   }
 
-  async renderToken(message, token, position) {
+  async renderToken(message, token, position, dispatched = false) {
+    if (!dispatched) return dispatchTileVisual({ id: this.owner.replace(/^spell-arsenal:/, ''), spell: this.settings.SPELL_NAME, kind: this.kind }, () => this.renderToken(message, token, position, true));
     if (this.adapter.reverted(message)) return;
     if (!canvas.ready || canvas.scene !== token.parent || canvas.level?.id !== position.levelId) return;
     if (canvas.grid.isGridless) throw new Error('Spell visuals require a grid.');
@@ -236,7 +238,8 @@ class SpellVisualRunner {
     if (!this.enabled || this.adapter.reverted(message)) await this.erase(token.parent, message.id);
   }
 
-  async renderRegion(region) {
+  async renderRegion(region, dispatched = false) {
+    if (!dispatched) return dispatchTileVisual({ id: this.owner.replace(/^spell-arsenal:/, ''), spell: this.settings.SPELL_NAME, kind: this.kind }, () => this.renderRegion(region, true));
     if (!region.parent.regions.has(region.id) || this.adapter.placementPending(region) || this.finished.has(region.uuid)) return;
     if (!this.visible(region)) { await this.erase(region.parent, region.id); return; }
     if (canvas.grid.isGridless) throw new Error('Spell visuals require a grid.');

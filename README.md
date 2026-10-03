@@ -52,6 +52,28 @@ Use **Add missing defaults** to add catalog mappings while keeping your customiz
 
 **Cleanup:** Delete the source region to remove its visuals, or use **Pause & clear effects** to stop automation and clear generated effects across scenes.
 
+## Area save and damage prompts
+
+Under **Area saves and damage**, new mappings use **Automatic from spell rules**. Trigger selections come from the actual spell’s native activities and description. Turn automatic mode off to select any combination of placement, entry/re-entry, start of turn, end of turn, and exit manually. No manual selections means off. Existing manual overrides are preserved. Coverage follows the token’s footprint and movement path, including passing through an area. Teleports only check the destination.
+
+Choose a repeat limit: once per affected token’s turn, once per caster’s turn, or every trigger. These limits are per token and source area; without combat, movement triggers run each time. Automatic mode shows detected triggers and resolves them again when the spell is used. No reliable data means no inferred triggers; unusual or localized wording may need manual setup.
+
+On placement, Spell Arsenal targets all covered enemies: PF2e uses actor alliances; D&D uses token disposition relative to the caster’s scene token. Damage spells roll native damage once for the area; attack spells roll their native attack instead. The roll still happens when no enemies are covered. Save prompts remain individual; entry and turn triggers use their configured prompts.
+
+With **PF2e Toolbelt** active, Spell Arsenal skips its follow-up save prompts after the placement roll. Use Toolbelt’s chat controls to handle those saves.
+
+Instant spell templates are removed after a successful placement damage roll and any follow-up save prompts. Lasting areas and cancelled rolls keep their templates.
+
+An active player who owns the token receives its save prompt; otherwise the GM handles the save. The GM receives damage controls. Rolls use the system’s native spell data, including the actual cast rank or level and caster DC. Automation opens a prompt without reposting the spell description. Use the original spell card for follow-up; HP is not changed automatically. A timed-out player request does not trigger an automatic second save.
+
+Prompts are limited to once per token and region per combat turn. Deleting the source or token, disabling automation, or reaching a lasting area’s duration cancels pending prompts. Aztec Template Wizard save and damage behaviors are left to that module; configuring only template shapes still allows Spell Arsenal rolls. Defaults stay off: choose triggers according to the individual spell’s rules.
+
+## Trigger Animations integration
+
+With **Trigger Animations** and **Trigger Engine** enabled, turn on **Use Trigger Animations** in Spell Arsenal’s settings and reload. In Trigger Animations’ registration menu, enable the entries in **Spell Arsenal** and choose their priorities relative to other animations. Each entry uses the custom **Tile Arsenal** node to render its configured spell mapping. Disabled entries do not fall back to Spell Arsenal’s standalone visuals.
+
+Spell Arsenal still manages area placement updates, durations, and cleanup. Save mapping changes in Spell Arsenal; refresh after adding new mappings so their entries appear in Trigger Animations. Turn off **Use Trigger Animations** and reload to return to standalone behavior.
+
 ## Current limitations
 
 - Gridless scenes are unsupported.

@@ -62,7 +62,7 @@ jobs:
           mv release-manifest.json module.json
       - name: Create module archive
         if: github.event_name == 'release'
-        run: zip --recurse-paths module.zip module.json README.md LICENSE scripts/ styles/
+        run: zip --recurse-paths module.zip module.json README.md CHANGELOG.md LICENSE scripts/ styles/
       - name: Upload release files
         if: github.event_name == 'release'
         env:

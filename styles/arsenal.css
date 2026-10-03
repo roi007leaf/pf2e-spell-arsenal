@@ -46,3 +46,34 @@
 .spell-arsenal footer { position: sticky; bottom: -18px; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0; background: #141c29; border-top: 1px solid #33435c; }
 .spell-arsenal footer .primary { background: #355b94; border-color: #6a91cd; margin-left: auto; font-weight: 600; }
 @media (max-width: 850px) { .spell-arsenal .mapping-fields { grid-template-columns: 1fr 1fr; } }
+
+.spell-arsenal-area-prompt { --color-text-primary: #e6edf7; --color-text-secondary: #a8b8ce; background: #141c29; color: #e6edf7; border: 1px solid #35465e; border-radius: 12px; }
+.spell-arsenal-area-prompt .window-header { background: #101722; border-bottom: 1px solid #35465e; }
+.spell-arsenal-area-prompt .window-content { background: #141c29; padding: 18px; gap: 12px; }
+.spell-arsenal-area-prompt .area-prompt-summary { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1d293b; border: 1px solid #35465e; border-radius: 8px; }
+.spell-arsenal-area-prompt .area-prompt-summary > img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid #526781; }
+.spell-arsenal-area-prompt .area-prompt-summary > i { font-size: 26px; color: #91baf1; }
+.spell-arsenal-area-prompt .area-prompt-summary > div > strong { font-size: 17px; }
+.spell-arsenal-area-prompt .area-prompt-summary p { margin: 4px 0 0; color: #b9c8dd; font-size: 13px; line-height: 1.5; }
+.spell-arsenal-area-prompt .area-prompt-hint { margin: 12px 0; color: #a8b8ce; font-size: 13px; line-height: 1.5; }
+.spell-arsenal-area-prompt .form-footer { display: flex; flex-direction: column; gap: 8px; }
+.spell-arsenal-area-prompt .form-footer button { width: 100%; min-height: 44px; height: auto; padding: 10px 14px; white-space: normal; line-height: 1.45; text-align: left; justify-content: flex-start; background: #253b56; color: #e6edf7; border: 1px solid #48668b; border-radius: 7px; box-shadow: none; }
+.spell-arsenal-area-prompt .form-footer button:hover { background: #304e72; border-color: #86b4ed; }
+.spell-arsenal-area-prompt .form-footer button:focus-visible { outline: 2px solid #a8cfff; outline-offset: 2px; }
+.spell-arsenal-area-prompt .form-footer button[data-action="skip"] { margin-top: 4px; background: transparent; border-color: #35465e; color: #a8b8ce; }
+.spell-arsenal-area-prompt .form-footer button { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: center; }
+.spell-arsenal-area-prompt .form-footer button > span { white-space: normal; overflow-wrap: anywhere; text-align: left; line-height: 1.5; }
+.spell-arsenal-area-prompt .form-footer button > i { color: #a8cfff; text-align: center; }
+.spell-arsenal-area-prompt .form-footer button[data-action="skip"]:hover { background: #1d293b; color: #e6edf7; }
+.spell-arsenal .area-trigger-controls { grid-column: 1 / -1; display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 10px 16px; border: 1px solid #35465e; border-radius: 8px; padding: 12px; margin: 0; }
+.spell-arsenal .area-trigger-controls legend { color: #b9cfee; font-weight: 600; font-size: 13px; }
+.spell-arsenal .area-trigger-options { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 2px; }
+.spell-arsenal .area-trigger-options label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.spell-arsenal .area-trigger-controls > label { display: flex; gap: 12px; align-items: center; white-space: nowrap; margin: 0; }
+.spell-arsenal .area-trigger-controls > label select { width: 280px; height: 36px; margin: 0; }
+.spell-arsenal .area-trigger-controls > button { width: auto; height: 36px; margin: 0; justify-self: start; padding: 0 14px; }
+.spell-arsenal .area-trigger-controls .status { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 600px) {
+  .spell-arsenal .area-trigger-controls { grid-template-columns: minmax(0, 1fr); }
+  .spell-arsenal .area-trigger-controls > label select { width: auto; min-width: 0; flex: 1; }
+}
