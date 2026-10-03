@@ -77,6 +77,7 @@ test('D&D dialog uses prepared activity DC, save ability and activity damage rol
   const spell = { type: 'spell', name: 'Fireball', system: { level: 5, activities: { save: { id: 'a', name: 'Fireball', type: 'save', save: { ability: new Set(['dex']), dc: { value: 18 } }, damage: { parts: [{}] }, rollDamage: async () => rolls.push('upcast damage') } } } };
   const token = { name: 'Target', actor: { rollSavingThrow: async options => rolls.push(options) } };
   foundry.applications.api.DialogV2.wait = async data => {
+    assert.equal(data.buttons.find(b => b.action === 'save-a-dex').label, 'Dexterity save');
     await data.buttons.find(b => b.action === 'save-a-dex').callback();
     await data.buttons.find(b => b.action === 'damage-a').callback();
   };

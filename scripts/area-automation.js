@@ -32,11 +32,14 @@ export function showAreaPrompt(spell, token, event, { valid = () => true, savesO
     const actions = systemAdapter(spell).areaActions(spell, token, event).filter(action => (!savesOnly || action.id.startsWith('save')) && (!damageOnly || action.id.startsWith('damage')));
     if ((savesOnly || damageOnly) && !actions.length) return 'skip';
     const showDC = systemAdapter(spell).areaShowDC(spell);
-    const buttons = actions.map(action => ({ action: action.id, label: promptLabel(showDC ? action.label : action.label.replace(/\s*\(DC \d+\)/g, '')), icon: action.id.startsWith('save') ? 'fa-solid fa-shield-halved' : 'fa-solid fa-dice', callback: async () => {
+    const saveCount = actions.filter(action => action.id.startsWith('save')).length;
+    const buttons = actions.map(action => {
+      const label = action.id.startsWith('save') && saveCount === 1 ? action.label.replace(/^.*?:\s*/, '') : action.label;
+      return { action: action.id, label: promptLabel(showDC ? label : label.replace(/\s*\(DC \d+\)/g, '')), icon: action.id.startsWith('save') ? 'fa-solid fa-shield-halved' : 'fa-solid fa-dice', callback: async () => {
       if (!valid()) return 'cancelled';
       const result = await action.run();
       return result ? action.id : 'cancelled';
-    } }));
+    } }; });
     const save = actions.find(action => action.id.startsWith('save')), damage = actions.find(action => action.id.startsWith('damage'));
     if (save && damage && actions.filter(a => a.id.startsWith('save')).length === 1 && actions.filter(a => a.id.startsWith('damage')).length === 1) buttons.push({ action: 'both', label: 'Roll save and damage', callback: async () => {
       if (!valid()) return 'cancelled';

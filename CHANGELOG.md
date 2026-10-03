@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 — 2026-10-03
+
+- Simplify single-save prompt buttons to show the save ability without repeating the D&D activity's combined trigger name.
+- Keep trigger context in the prompt summary and preserve activity labels when multiple saves require a choice.
+- Retain system DC visibility rules and native roll behavior.
+
 ## 0.1.5 — 2026-10-03
 
 - Respect PF2e metagame DC visibility and caster ownership in area roll prompts.
