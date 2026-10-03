@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 — 2026-10-03
+
+- Fix garbled separators in save button labels, roll prompt titles, and picker-cell validation text.
+- Use plain ASCII separators for these labels to prevent encoding artifacts.
+
 ## 0.1.3 — 2026-10-03
 
 - Add optional Trigger Animations integration with a Tile Arsenal node and registered spell entries.

@@ -25,7 +25,7 @@ export async function requestCasterRoll(spell, region, token, event, valid, plac
   return showAreaPrompt(spell, token, event, { valid, damageOnly: true });
 }
 const escape = value => String(value).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-const promptLabel = label => label.replace(/\b(str|dex|con|int|wis|cha)\b/g, ability => ({ str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' }[ability])).replace(/\(DC (\d+)\)/g, 'Â· DC $1');
+const promptLabel = label => label.replace(/\b(str|dex|con|int|wis|cha)\b/g, ability => ({ str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' }[ability])).replace(/\(DC (\d+)\)/g, '- DC $1');
 export function showAreaPrompt(spell, token, event, { valid = () => true, savesOnly = false, damageOnly = false } = {}) {
   const task = promptQueue.then(async () => {
     if (!valid()) return 'cancelled';
@@ -47,7 +47,7 @@ export function showAreaPrompt(spell, token, event, { valid = () => true, savesO
     let active;
     const timer = setInterval(() => { if (active && !valid()) void active.dialog.close(); }, 500);
     const image = token.texture?.src ?? token.actor?.img ?? spell.img;
-    try { return await foundry.applications.api.DialogV2.wait({ classes: ['spell-arsenal-area-prompt'], position: { width: 440 }, window: { title: `${spell.name} â€” ${token.name || token.actor.name}`, resizable: true },
+    try { return await foundry.applications.api.DialogV2.wait({ classes: ['spell-arsenal-area-prompt'], position: { width: 440 }, window: { title: `${spell.name} - ${token.name || token.actor.name}`, resizable: true },
       content: `<div class="area-prompt-summary">${image ? `<img src="${escape(image)}" alt="">` : '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>'}<div><strong>${escape(spell.name)}</strong><p><strong>${escape(token.name || token.actor.name)}</strong> ${{ turn: 'starts its turn in', 'turn-end': 'ends its turn in', placement: 'is covered by', entry: 'entered', exit: 'left' }[event] ?? 'entered'} this area.</p></div></div><p class="area-prompt-hint">${actions.length ? (actions.every(action => action.id.startsWith('save')) ? 'Choose the save for this trigger.' : 'Choose a roll. Apply damage from its chat result.') : 'Roll details unavailable. Use the original spell card in chat.'}</p>`,
       buttons, rejectClose: false, render: (_event, dialog) => { active = { dialog, valid }; dialogs.add(active); if (!valid()) void dialog.close(); } });
     } finally { clearInterval(timer); if (active) dialogs.delete(active); }
